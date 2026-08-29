@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reproductor Studio Pro</title>
+  
+  <!-- Icono (favicon) para la pestaña -->
+  <link rel="icon" type="image/png" href="img/favicon.png">
+
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@400;600&family=Orbitron:wght@500;700&family=Pacifico&family=Poppins:wght@400;600&family=Roboto:wght@400;600&family=Cinzel:wght@500&family=Caveat:wght@600&family=Fira+Code&family=Oswald:wght@500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+</head>
+<body>
+
+  <!-- Fondo de pantalla Video / Imagen -->
+  <video id="bg-video" autoplay loop muted playsinline class="bg-video-hidden"></video>
+  <div id="bg-custom-image" class="bg-custom-image"></div>
+
+  <!-- BARRA SUPERIOR IZQUIERDA -->
+  <div class="top-left-global-bar">
+    <button id="btn-main-menu" class="global-icon-btn" title="Menú de Ajustes">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- BARRA SUPERIOR DERECHA -->
+  <div class="top-global-bar">
+    <!-- Modo Enfoque (Ocultar Interfaz) -->
+    <button id="btn-focus-mode" class="global-icon-btn" title="Modo Enfoque (Ocultar interfaz)">
+      <svg id="focus-eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <!-- Ventana Mini Player -->
+    <button id="btn-mini-player" class="global-icon-btn" title="Mini Reproductor">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="11" y="11" width="8" height="8" rx="1"/></svg>
+    </button>
+    <!-- Pantalla Completa -->
+    <button id="btn-fullscreen" class="global-icon-btn" title="Pantalla Completa">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    </button>
+  </div>
+
+  <div class="app-layout" id="app-layout">
+    
+    <!-- ECUALIZADOR -->
+    <div class="eq-panel hidden" id="eq-panel">
+      <div class="eq-header">
+        <span>Ecualizador Activo</span>
+        <button id="btn-close-eq" class="icon-btn" title="Cerrar Ecualizador">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="eq-presets">
+        <button class="preset-btn" data-preset="bass">Graves</button>
+        <button class="preset-btn" data-preset="treble">Agudos</button>
+        <button class="preset-btn" data-preset="vocal">Voz</button>
+        <button class="preset-btn" data-preset="reset">Flat</button>
+      </div>
+      <div class="eq-sliders">
+        <div class="eq-band">
+          <input type="range" class="eq-band-range" min="-12" max="12" value="0" data-freq="60">
+          <span>60Hz</span>
+        </div>
+        <div class="eq-band">
+          <input type="range" class="eq-band-range" min="-12" max="12" value="0" data-freq="1000">
+          <span>1kHz</span>
+        </div>
+        <div class="eq-band">
+          <input type="range" class="eq-band-range" min="-12" max="12" value="0" data-freq="12000">
+          <span>12kHz</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPRODUCTOR PRINCIPAL -->
+    <div class="player-card" id="player-card">
+      <div class="player-bg-fluid" id="player-bg-fluid"></div>
+      
+      <div class="top-bar">
+        <button id="btn-eq-toggle" class="text-btn">EQ</button>
+        <button id="btn-lyrics-toggle" class="text-btn">Letras</button>
+        <span id="sleep-timer-badge" class="timer-badge hidden">00:00</span>
+      </div>
+
+      <div class="cover-container" id="cover-container">
+        <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80" alt="Carátula" id="cover">
+      </div>
+
+      <div class="song-info">
+        <h2 id="title">Sin canción cargada</h2>
+        <h3 id="artist">Sube tus archivos MP3</h3>
+      </div>
+
+      <div class="progress-container" id="progress-container">
+        <div class="progress-bar" id="progress"></div>
+      </div>
+      <div class="time-stamps">
+        <span id="current-time">0:00</span>
+        <span id="duration">0:00</span>
+      </div>
+
+      <div class="controls">
+        <button id="shuffle" class="icon-btn" title="Aleatorio">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        </button>
+        <button id="prev" class="icon-btn" title="Anterior">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button id="play" class="btn-play" title="Reproducir / Pausa">
+          <svg id="play-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button id="next" class="icon-btn" title="Siguiente">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button id="loop" class="icon-btn" title="Repetir">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </button>
+        <button id="btn-fav" class="icon-btn fav-btn" title="Me gusta">
+          <svg id="fav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.72-8.72 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+      </div>
+
+      <div class="volume-container">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </div>
+    </div>
+
+    <!-- PANEL DE BIBLIOTECA EXTENDIDO -->
+    <div class="library-panel" id="library-panel">
+      <div class="library-header">
+        <div class="library-nav">
+          <button id="btn-back-playlist" class="icon-btn hidden" title="Volver">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <button class="nav-btn active" data-tab="all-songs">Canciones</button>
+          <button class="nav-btn" data-tab="playlists">Playlists</button>
+          <button class="nav-btn" data-tab="favorites">Me Gusta</button>
+        </div>
+        <button id="btn-create-playlist" class="action-btn hidden">+ Crear Playlist</button>
+      </div>
+
+      <!-- Cabecera dinámica cuando se navega dentro de una Playlist -->
+      <div id="playlist-view-header" class="playlist-view-header hidden">
+        <div class="playlist-cover-wrapper">
+          <img id="playlist-view-cover" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80" alt="Playlist Cover">
+        </div>
+        <h3 id="playlist-view-title">Nombre Playlist</h3>
+        <div class="playlist-header-actions">
+          <button id="btn-rename-playlist" class="action-btn">Renombrar</button>
+          <button id="btn-delete-playlist" class="action-btn-danger">Eliminar Playlist</button>
+        </div>
+      </div>
+
+      <div class="library-content">
+        <ul id="playlist" class="playlist-view list-medium">
+          <li class="empty-msg">Carga canciones para comenzar</li>
+        </ul>
+        <div class="hidden-songs-banner" id="btn-open-hidden">
+          <span>Archivos y Músicas Ocultas</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTÓN FLOTANTE (+) -->
+  <div class="floating-upload-btn" id="drop-zone" title="Cargar canciones MP3">
+    <label for="file-input" class="floating-label">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </label>
+    <input type="file" id="file-input" accept="audio/mp3, audio/*" multiple hidden>
+  </div>
+
+  <!-- VENTANA DE AJUSTES ESTILO LARK PLAYER (SLIDE MODULAR) -->
+  <div class="modal-overlay hidden" id="modal-settings">
+    <div class="modal-window settings-window">
+      <div class="modal-header">
+        <h3 id="settings-title">Ajustes generales</h3>
+        <button id="btn-close-settings" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      
+      <div class="settings-slider-wrapper">
+        <!-- VISTA PRINCIPAL DE CATEGORÍAS -->
+        <div class="settings-panel settings-main-view" id="settings-main-view">
+          
+          <div class="setting-card-item" data-target="sub-stats">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Tiempo de reproducción</span>
+              <span class="setting-card-desc" id="stat-play-time-preview">0h 0m</span>
+            </div>
+            <span class="badge-rank" id="stat-rank-badge">Principiante</span>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-theme">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Tema y Diseño</span>
+              <span class="setting-card-desc">Colores, tamaño de lista, fuente y tamaño de texto</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-performance">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Rendimiento y SFX</span>
+              <span class="setting-card-desc">Modo rendimiento y efectos de sonido</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-timer">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Temporizador para dormir</span>
+              <span class="setting-card-desc" id="timer-status-desc">Desactivado</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-playback">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Ajustes de reproducción</span>
+              <span class="setting-card-desc">Fundido, sin pausa, sonido de fondo</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-controls">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Atajos de teclado</span>
+              <span class="setting-card-desc">Personaliza las teclas de control rápido</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-system">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Barra de control y notificaciones</span>
+              <span class="setting-card-desc">Teclas Fn, carátula e información</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item danger-card" id="btn-factory-reset">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Restablecimiento de Fábrica</span>
+              <span class="setting-card-desc">Devuelve toda la configuración a los valores por defecto</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SUB-PANELES CON EFECTO SLIDE -->
+        
+        <!-- Sub-panel: Stats -->
+        <div class="settings-panel settings-sub-panel" id="sub-stats">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="highlight-box">
+              <span class="setting-title">Tiempo total acumulado</span>
+              <h2 id="stat-play-time-detail">0h 0m 0s</h2>
+              <span class="setting-desc">Nivel actual: <strong id="stat-rank-text">Principiante</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Tema -->
+        <div class="settings-panel settings-sub-panel" id="sub-theme">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item vertical">
+              <span class="setting-title">Tamaño de lista de canciones</span>
+              <div class="btn-group">
+                <button class="size-btn active" data-size="small">Pequeño</button>
+                <button class="size-btn" data-size="medium">Mediano</button>
+                <button class="size-btn" data-size="large">Grande (2 Col)</button>
+              </div>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Tamaño de Fuente (Interfaz)</span>
+              <div class="btn-group">
+                <button class="font-size-btn" data-fontsize="small">Pequeño</button>
+                <button class="font-size-btn active" data-fontsize="medium">Mediano</button>
+                <button class="font-size-btn" data-fontsize="large">Grande</button>
+              </div>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Modo de pantalla</span>
+              <div class="btn-group">
+                <button class="mode-btn active" data-mode="dark">Oscuro</button>
+                <button class="mode-btn" data-mode="light">Claro</button>
+              </div>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Color de Acento</span>
+              <div class="color-picker-group">
+                <button class="color-dot active" data-color="#ffffff" style="background:#ffffff;"></button>
+                <button class="color-dot" data-color="#3b82f6" style="background:#3b82f6;"></button>
+                <button class="color-dot" data-color="#22c55e" style="background:#22c55e;"></button>
+                <button class="color-dot" data-color="#ec4899" style="background:#ec4899;"></button>
+                <button class="color-dot" data-color="#f97316" style="background:#f97316;"></button>
+                <label class="color-dot custom-color-btn" title="Personalizado">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <input type="color" id="input-custom-color" hidden>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Fondos de Pantalla</span>
+              <div class="wallpaper-inputs">
+                <label class="custom-file-btn">
+                  Subir Imagen de Fondo
+                  <input type="file" id="input-bg-image" accept="image/*" hidden>
+                </label>
+                <label class="custom-file-btn">
+                  Subir Video (Movimiento)
+                  <input type="file" id="input-bg-video" accept="video/mp4, video/webm" hidden>
+                </label>
+                <button id="btn-remove-bg" class="action-btn-danger">Quitar Fondo</button>
+              </div>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Tipografía</span>
+              <select id="select-font" class="custom-select">
+                <option value="Inter, sans-serif">Inter (Predeterminada)</option>
+                <option value="Roboto, sans-serif">Roboto Modern</option>
+                <option value="Poppins, sans-serif">Poppins Soft</option>
+                <option value="Montserrat, sans-serif">Montserrat Bold</option>
+                <option value="'Orbitron', sans-serif">Orbitron Gamer</option>
+                <option value="'Pacifico', cursive">Pacifico Retro</option>
+                <option value="'Cinzel', serif">Cinzel Elegante</option>
+                <option value="'Caveat', cursive">Caveat Cursiva</option>
+                <option value="'Fira Code', monospace">Fira Code Hacker</option>
+                <option value="'Oswald', sans-serif">Oswald Compacta</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Rendimiento y SFX -->
+        <div class="settings-panel settings-sub-panel" id="sub-performance">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Modo Rendimiento</span>
+                <span class="setting-desc">Deshabilita animaciones, desenfocado (blur) y sombras para optimizar consumo</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-performance-mode">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Efectos de Sonido (SFX)</span>
+                <span class="setting-desc">Sonidos sutiles al interactuar con menús e interfaz</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-sfx" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Temporizador para dormir -->
+        <div class="settings-panel settings-sub-panel" id="sub-timer">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <span class="setting-title">Programar apagado automático</span>
+            <span class="setting-desc" style="margin-bottom: 12px; display:block;">La música se pausará al concluir la cuenta regresiva.</span>
+            <div class="timer-options-grid">
+              <button class="timer-btn" data-minutes="15">15 Minutos</button>
+              <button class="timer-btn" data-minutes="30">30 Minutos</button>
+              <button class="timer-btn" data-minutes="60">60 Minutos</button>
+              <button class="timer-btn danger" data-minutes="0">Apagar Temporizador</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Ajustes de reproducción -->
+        <div class="settings-panel settings-sub-panel" id="sub-playback">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Reproducir junto a otras apps</span>
+                <span class="setting-desc">Permite reproducir audio sin pausar al cambiar</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-bg-play" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Reproducción sin pausa</span>
+                <span class="setting-desc">Elimina silencios entre pistas</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-gapless" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Efecto Crossfade</span>
+                <span class="setting-desc">Transición con fundido suave</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-crossfade" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Atajos de teclado -->
+        <div class="settings-panel settings-sub-panel" id="sub-controls">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="hotkey-list">
+              <div class="hotkey-row">
+                <span>Reproducir / Pausa</span>
+                <button class="hotkey-bind-btn" data-action="playPause">Space</button>
+              </div>
+              <div class="hotkey-row">
+                <span>Siguiente Canción</span>
+                <button class="hotkey-bind-btn" data-action="nextTrack">ArrowRight</button>
+              </div>
+              <div class="hotkey-row">
+                <span>Canción Anterior</span>
+                <button class="hotkey-bind-btn" data-action="prevTrack">ArrowLeft</button>
+              </div>
+              <div class="hotkey-row">
+                <span>Modo Enfoque</span>
+                <button class="hotkey-bind-btn" data-action="toggleFocus">KeyF</button>
+              </div>
+              <div class="hotkey-row">
+                <span>Silenciar Audio</span>
+                <button class="hotkey-bind-btn" data-action="toggleMute">KeyM</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Notificaciones -->
+        <div class="settings-panel settings-sub-panel" id="sub-system">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Mostrar iconos en barra</span>
+                <span class="setting-desc">Muestra la carátula en la barra de medios</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-show-icon" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Mostrar nombre de canción</span>
+                <span class="setting-desc">Visualiza título y artista en el sistema</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-show-name" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Control con Teclas Multimedia</span>
+                <span class="setting-desc">Permite controlar con Fn + F7 / Teclas del teclado</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-media-keys" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MÚSICAS OCULTAS -->
+  <div class="modal-overlay hidden" id="modal-hidden">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>Archivos Ocultos</h3>
+        <button id="btn-close-hidden" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-scroll-area">
+        <ul id="hidden-playlist" class="playlist-view list-small"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CREAR / RENOMBRAR PLAYLIST -->
+  <div class="modal-overlay hidden" id="modal-create-playlist">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 id="modal-playlist-title">Nueva Playlist</h3>
+        <button id="btn-close-create-playlist" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="input-playlist-name" placeholder="Nombre de la playlist..." class="custom-input">
+        <button id="btn-save-playlist" class="custom-btn" style="margin-top: 12px; width: 100%;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MENÚ DE 3 PUNTOS (OPCIONES DE CANCIÓN) -->
+  <div class="modal-overlay hidden" id="modal-song-menu">
+    <div class="modal-window song-menu-window">
+      <div class="modal-header">
+        <h3 id="modal-song-title">Opciones</h3>
+        <button id="btn-close-song-menu" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-menu-options">
+        <button id="opt-add-to-playlist" class="menu-opt-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Añadir a Playlist
+        </button>
+        <button id="opt-hide-song" class="menu-opt-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          <span id="txt-hide-opt">Ocultar Canción</span>
+        </button>
+        <button id="opt-delete-song" class="menu-opt-btn danger">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Borrar Canción
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SELECCIONAR PLAYLIST -->
+  <div class="modal-overlay hidden" id="modal-select-playlist">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>Selecciona Playlist</h3>
+        <button id="btn-close-select-playlist" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-scroll-area">
+        <ul id="target-playlists-list" class="playlist-view list-small"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL DE LETRAS -->
+  <div class="lyrics-panel" id="lyrics-panel">
+    <div class="lyrics-bg" id="lyrics-bg"></div>
+    <div class="lyrics-header">
+      <h3>Letra</h3>
+      <div class="lyrics-actions">
+        <button id="btn-edit-lyrics" class="icon-btn">Editar tu letra</button>
+        <button id="btn-close-lyrics" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="lyrics-body" id="lyrics-body">
+      <p class="lyrics-placeholder">Sin letra disponible.</p>
+    </div>
+    <div class="lyrics-editor hidden" id="lyrics-editor">
+      <textarea id="lyrics-textarea" placeholder="Escribe la letra aquí..."></textarea>
+      <button id="btn-save-lyrics" class="save-btn">Guardar</button>
+    </div>
+  </div>
+
+  <audio id="audio-player-1" crossorigin="anonymous"></audio>
+  <audio id="audio-player-2" crossorigin="anonymous"></audio>
+  <script src="script.js"></script>
+</body>
+</html>
