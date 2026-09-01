@@ -542,6 +542,17 @@ setInterval(() => {
     totalPlayedSeconds++;
     localStorage.setItem('totalPlayedSeconds', totalPlayedSeconds.toString());
     updateTimeStatDisplay();
+
+    const todayKey = getDateKey();
+    listeningStats.daily[todayKey] = (listeningStats.daily[todayKey] || 0) + 1;
+    const song = songList[currentIndex];
+    if (song) {
+      const songKey = song.id !== undefined ? ('id:' + song.id) : (song.title + '||' + song.artist);
+      listeningStats.bySong[songKey] = (listeningStats.bySong[songKey] || 0) + 1;
+      if (song.artist) listeningStats.byArtist[song.artist] = (listeningStats.byArtist[song.artist] || 0) + 1;
+    }
+    saveListeningStats();
+    updateListeningStatsDisplay();
   }
 }, 1000);
 
@@ -563,6 +574,62 @@ function updateTimeStatDisplay() {
   if (statRankText) statRankText.textContent = rank;
 }
 updateTimeStatDisplay();
+
+// --- Estadísticas de escucha: hoy, artista más escuchado, top canciones ---
+function getDateKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = ('0' + (d.getMonth() + 1)).slice(-2);
+  const day = ('0' + d.getDate()).slice(-2);
+  return `${y}-${m}-${day}`;
+}
+
+let listeningStats = { daily: {}, bySong: {}, byArtist: {} };
+try {
+  const stored = JSON.parse(localStorage.getItem('listeningStats') || '{}');
+  listeningStats.daily = stored.daily || {};
+  listeningStats.bySong = stored.bySong || {};
+  listeningStats.byArtist = stored.byArtist || {};
+} catch (err) { /* datos corruptos o inexistentes: seguimos con listas vacías */ }
+
+function saveListeningStats() {
+  // Solo nos quedamos con los últimos 30 días para que esto no crezca sin límite
+  const keys = Object.keys(listeningStats.daily).sort();
+  if (keys.length > 30) keys.slice(0, keys.length - 30).forEach(k => delete listeningStats.daily[k]);
+  localStorage.setItem('listeningStats', JSON.stringify(listeningStats));
+}
+
+function updateListeningStatsDisplay() {
+  const todaySeconds = listeningStats.daily[getDateKey()] || 0;
+  const statTodayTime = document.getElementById('stat-today-time');
+  if (statTodayTime) statTodayTime.textContent = `${Math.floor(todaySeconds / 60)}m ${todaySeconds % 60}s`;
+
+  const artistEntries = Object.entries(listeningStats.byArtist).sort((a, b) => b[1] - a[1]);
+  const statTopArtist = document.getElementById('stat-top-artist');
+  if (statTopArtist) statTopArtist.textContent = artistEntries.length > 0 ? artistEntries[0][0] : '-';
+
+  const statTopSongsList = document.getElementById('stat-top-songs');
+  if (statTopSongsList) {
+    const songEntries = Object.entries(listeningStats.bySong).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (songEntries.length === 0) {
+      statTopSongsList.innerHTML = '<li class="empty-msg">Todavía no hay datos suficientes</li>';
+    } else {
+      statTopSongsList.innerHTML = songEntries.map(([key, seconds], i) => {
+        let song = null;
+        if (key.startsWith('id:')) {
+          const idVal = key.slice(3);
+          song = songList.find(s => String(s.id) === idVal);
+        } else {
+          const [t, a] = key.split('||');
+          song = songList.find(s => s.title === t && s.artist === a);
+        }
+        const name = song ? song.title : 'Canción no disponible';
+        const art = song ? song.artist : '';
+        return `<li><span>${i + 1}. ${name}${art ? ' — ' + art : ''}</span><span class="stat-count">${Math.floor(seconds / 60)}m</span></li>`;
+      }).join('');
+    }
+  }
+}
+updateListeningStatsDisplay();
 
 // Temporizador
 document.querySelectorAll('.timer-btn').forEach(btn => {
@@ -1276,18 +1343,6 @@ function renderPlaylist() {
 function openModal(modal) { if (modal) modal.classList.add('active'); }
 function closeModal(modal) { if (modal) modal.classList.remove('active'); }
 
-if (btnPlayPlaylist) {
-  btnPlayPlaylist.addEventListener('click', () => {
-    playSFX('open');
-    if (!currentPlaylistView) return;
-    const pSongs = playlists[currentPlaylistView] || [];
-    const firstAvailable = pSongs.map(findSongInLibrary).find(s => s !== null);
-    if (!firstAvailable) return;
-    const realIndex = songList.indexOf(firstAvailable);
-    if (realIndex > -1) loadSong(realIndex);
-  });
-}
-
 if (btnRenamePlaylist) {
   btnRenamePlaylist.addEventListener('click', () => {
     if (!currentPlaylistView) return;
@@ -1521,7 +1576,11 @@ function renderTargetPlaylists() {
     li.innerHTML = `<div class="item-details" style="padding:10px;"><div class="item-title">${pName}</div></div>`;
     li.addEventListener('click', () => {
       playSFX('click');
-      if (selectedSongForMenu && !playlists[pName].some(s => s.title === selectedSongForMenu.title)) {
+      const alreadyIn = selectedSongForMenu && playlists[pName].some(s =>
+        (selectedSongForMenu.id !== undefined && s.id === selectedSongForMenu.id) ||
+        (s.title === selectedSongForMenu.title && s.artist === selectedSongForMenu.artist)
+      );
+      if (selectedSongForMenu && !alreadyIn) {
         playlists[pName].push(selectedSongForMenu);
         savePlaylistsToStorage();
       }
@@ -2082,6 +2141,8 @@ function updateKaraokeWords(activeLineEl, lineProgress) {
 // ==========================================
 function clearModePresets() {
   document.body.classList.remove('preset-game', 'preset-night', 'preset-study');
+  const nightOverlay = document.getElementById('night-mode-overlay');
+  if (nightOverlay) nightOverlay.classList.remove('active');
 }
 const presetNormalBtn = document.getElementById('preset-normal');
 const presetGameBtn = document.getElementById('preset-game');
@@ -2089,7 +2150,15 @@ const presetNightBtn = document.getElementById('preset-night');
 const presetStudyBtn = document.getElementById('preset-study');
 if (presetNormalBtn) presetNormalBtn.addEventListener('click', () => { playSFX('click'); clearModePresets(); });
 if (presetGameBtn) presetGameBtn.addEventListener('click', () => { playSFX('click'); clearModePresets(); document.body.classList.add('preset-game'); });
-if (presetNightBtn) presetNightBtn.addEventListener('click', () => { playSFX('click'); clearModePresets(); document.body.classList.add('preset-night'); });
+if (presetNightBtn) {
+  presetNightBtn.addEventListener('click', () => {
+    playSFX('click');
+    clearModePresets();
+    document.body.classList.add('preset-night');
+    const nightOverlay = document.getElementById('night-mode-overlay');
+    if (nightOverlay) nightOverlay.classList.add('active');
+  });
+}
 if (presetStudyBtn) presetStudyBtn.addEventListener('click', () => { playSFX('click'); clearModePresets(); document.body.classList.add('preset-study'); });
 
 // ==========================================
@@ -2113,5 +2182,166 @@ if (toggleAnimAddSong) {
 if (toggleAnimModals) {
   toggleAnimModals.addEventListener('change', (e) => {
     document.body.classList.toggle('anim-no-modals', !e.target.checked);
+  });
+}
+
+
+
+// ==========================================
+// EDITOR VISUAL EN VIVO (base real: fondo, bordes, sombra y cristal por tarjeta)
+// ==========================================
+let visualEditorActive = false;
+const EDITABLE_CARDS = {
+  'player-card': document.getElementById('player-card'),
+  'eq-panel': document.getElementById('eq-panel'),
+  'vm-panel': document.getElementById('vm-panel')
+};
+let customCardStyles = {};
+try { customCardStyles = JSON.parse(localStorage.getItem('customCardStyles') || '{}'); } catch (e) { customCardStyles = {}; }
+
+function applyCardStyle(el, style) {
+  if (!el || !style) return;
+  if (style.bgImage) {
+    el.style.backgroundImage = `url(${style.bgImage})`;
+    el.style.backgroundSize = style.fit === 'contain' ? 'contain' : (style.fit === 'repeat' ? 'auto' : 'cover');
+    el.style.backgroundRepeat = style.fit === 'repeat' ? 'repeat' : 'no-repeat';
+    el.style.backgroundPosition = 'center';
+  }
+  if (style.radius !== undefined) el.style.borderRadius = style.radius + 'px';
+  if (style.borderWidth !== undefined) el.style.borderWidth = style.borderWidth + 'px';
+  if (style.borderColor) { el.style.borderStyle = 'solid'; el.style.borderColor = style.borderColor; }
+  if (style.shadow !== undefined) el.style.boxShadow = style.shadow > 0 ? `0 8px ${style.shadow}px rgba(0,0,0,0.5)` : 'none';
+  if (style.glass !== undefined) el.style.backgroundColor = `rgba(20,21,30,${style.glass})`;
+}
+
+Object.keys(customCardStyles).forEach(key => {
+  if (EDITABLE_CARDS[key]) applyCardStyle(EDITABLE_CARDS[key], customCardStyles[key]);
+});
+
+const btnOpenVisualEditor = document.getElementById('btn-open-visual-editor');
+const visualEditorToolbar = document.getElementById('visual-editor-toolbar');
+const btnExitVisualEditor = document.getElementById('btn-exit-visual-editor');
+const btnResetVisualEditor = document.getElementById('btn-reset-visual-editor');
+const modalCardEditor = document.getElementById('modal-card-editor');
+const btnCloseCardEditor = document.getElementById('btn-close-card-editor');
+const cardEditorTitle = document.getElementById('card-editor-title');
+const btnCardBgImage = document.getElementById('btn-card-bg-image');
+const inputCardBgImage = document.getElementById('input-card-bg-image');
+const inputCardRadius = document.getElementById('input-card-radius');
+const inputCardBorderWidth = document.getElementById('input-card-border-width');
+const inputCardBorderColor = document.getElementById('input-card-border-color');
+const inputCardShadow = document.getElementById('input-card-shadow');
+const inputCardGlass = document.getElementById('input-card-glass');
+const btnApplyCardStyle = document.getElementById('btn-apply-card-style');
+const btnClearCardStyle = document.getElementById('btn-clear-card-style');
+
+let editingCardKey = null;
+let pendingCardBgImage = null;
+
+function enterVisualEditor() {
+  visualEditorActive = true;
+  if (modalSettings) {
+    modalSettings.classList.add('ve-closing');
+    setTimeout(() => { modalSettings.classList.remove('active', 've-closing'); }, 300);
+  }
+  if (visualEditorToolbar) visualEditorToolbar.classList.remove('hidden');
+  Object.values(EDITABLE_CARDS).forEach(el => { if (el) el.classList.add('editable-highlight'); });
+}
+function exitVisualEditor() {
+  visualEditorActive = false;
+  if (visualEditorToolbar) visualEditorToolbar.classList.add('hidden');
+  Object.values(EDITABLE_CARDS).forEach(el => { if (el) el.classList.remove('editable-highlight'); });
+}
+
+if (btnOpenVisualEditor) btnOpenVisualEditor.addEventListener('click', () => { playSFX('open'); enterVisualEditor(); });
+if (btnExitVisualEditor) btnExitVisualEditor.addEventListener('click', () => { playSFX('close'); exitVisualEditor(); });
+
+if (btnResetVisualEditor) {
+  btnResetVisualEditor.addEventListener('click', () => {
+    if (!confirm('¿Restablecer toda la interfaz personalizada a los valores por defecto?')) return;
+    customCardStyles = {};
+    localStorage.removeItem('customCardStyles');
+    Object.values(EDITABLE_CARDS).forEach(el => {
+      if (!el) return;
+      ['backgroundImage', 'backgroundColor', 'borderRadius', 'borderWidth', 'borderColor', 'borderStyle', 'boxShadow'].forEach(p => el.style[p] = '');
+    });
+    playSFX('click');
+  });
+}
+
+Object.keys(EDITABLE_CARDS).forEach(key => {
+  const el = EDITABLE_CARDS[key];
+  if (!el) return;
+  el.addEventListener('click', (e) => {
+    if (!visualEditorActive) return;
+    e.stopPropagation();
+    editingCardKey = key;
+    pendingCardBgImage = null;
+    const existing = customCardStyles[key] || {};
+    if (inputCardRadius) inputCardRadius.value = existing.radius !== undefined ? existing.radius : 20;
+    if (inputCardBorderWidth) inputCardBorderWidth.value = existing.borderWidth !== undefined ? existing.borderWidth : 1;
+    if (inputCardBorderColor) inputCardBorderColor.value = existing.borderColor || '#ffffff';
+    if (inputCardShadow) inputCardShadow.value = existing.shadow !== undefined ? existing.shadow : 0;
+    if (inputCardGlass) inputCardGlass.value = existing.glass !== undefined ? existing.glass : 0.9;
+    document.querySelectorAll('.card-fit-btn').forEach(b => b.classList.toggle('active', b.dataset.fit === (existing.fit || 'cover')));
+    if (cardEditorTitle) cardEditorTitle.textContent = 'Personalizar: ' + key;
+    openModal(modalCardEditor);
+  });
+});
+
+if (btnCloseCardEditor) btnCloseCardEditor.addEventListener('click', () => { playSFX('close'); closeModal(modalCardEditor); });
+if (btnCardBgImage) btnCardBgImage.addEventListener('click', () => { if (inputCardBgImage) inputCardBgImage.click(); });
+if (inputCardBgImage) {
+  inputCardBgImage.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { pendingCardBgImage = ev.target.result; };
+    reader.readAsDataURL(file);
+  });
+}
+document.querySelectorAll('.card-fit-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    playSFX('click');
+    document.querySelectorAll('.card-fit-btn').forEach(b => b.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+  });
+});
+
+if (btnApplyCardStyle) {
+  btnApplyCardStyle.addEventListener('click', () => {
+    playSFX('click');
+    if (!editingCardKey || !EDITABLE_CARDS[editingCardKey]) { closeModal(modalCardEditor); return; }
+    const activeFitBtn = document.querySelector('.card-fit-btn.active');
+    const style = {
+      radius: inputCardRadius ? parseInt(inputCardRadius.value, 10) : 20,
+      borderWidth: inputCardBorderWidth ? parseInt(inputCardBorderWidth.value, 10) : 1,
+      borderColor: inputCardBorderColor ? inputCardBorderColor.value : '#ffffff',
+      shadow: inputCardShadow ? parseInt(inputCardShadow.value, 10) : 0,
+      glass: inputCardGlass ? parseFloat(inputCardGlass.value) : 0.9,
+      fit: activeFitBtn ? activeFitBtn.dataset.fit : 'cover'
+    };
+    if (pendingCardBgImage) style.bgImage = pendingCardBgImage;
+    else if (customCardStyles[editingCardKey] && customCardStyles[editingCardKey].bgImage) style.bgImage = customCardStyles[editingCardKey].bgImage;
+
+    customCardStyles[editingCardKey] = style;
+    try { localStorage.setItem('customCardStyles', JSON.stringify(customCardStyles)); }
+    catch (err) { alert('La imagen es muy grande para guardarse permanentemente. Prueba con una imagen más liviana.'); }
+    applyCardStyle(EDITABLE_CARDS[editingCardKey], style);
+    closeModal(modalCardEditor);
+  });
+}
+
+if (btnClearCardStyle) {
+  btnClearCardStyle.addEventListener('click', () => {
+    playSFX('click');
+    if (!editingCardKey) { closeModal(modalCardEditor); return; }
+    delete customCardStyles[editingCardKey];
+    localStorage.setItem('customCardStyles', JSON.stringify(customCardStyles));
+    const el = EDITABLE_CARDS[editingCardKey];
+    if (el) {
+      ['backgroundImage', 'backgroundColor', 'borderRadius', 'borderWidth', 'borderColor', 'borderStyle', 'boxShadow'].forEach(p => el.style[p] = '');
+    }
+    closeModal(modalCardEditor);
   });
 }
