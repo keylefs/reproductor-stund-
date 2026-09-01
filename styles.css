@@ -1701,7 +1701,16 @@ input:checked + .slider:before {
 
 /* Presets de Modo */
 body.preset-game * { transition: none !important; animation: none !important; backdrop-filter: none !important; }
-body.preset-night { filter: brightness(0.82) sepia(0.18); }
+/* OJO: nunca usar "filter" directo en <body> — rompe el posicionamiento de todo lo que
+   usa position:fixed (modales, Modo Cine, Modo Vehículo, overlay de arrastrar archivos, etc.)
+   porque un filter en un ancestro crea un nuevo "contenedor" para esos elementos fixed.
+   Por eso el Modo Noche usa un overlay aparte en vez de un filter en body. */
+#night-mode-overlay {
+  position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  background: rgba(80, 40, 0, 0.22); mix-blend-mode: multiply;
+  opacity: 0; transition: opacity 0.3s ease;
+}
+#night-mode-overlay.active { opacity: 1; }
 body.preset-study .bg-video-hidden, body.preset-study #bg-custom-image { filter: grayscale(0.4) brightness(0.6); }
 
 /* Interruptor maestro de animaciones */
@@ -1746,3 +1755,28 @@ body.no-animations, body.no-animations * { transition: none !important; animatio
 .stat-top-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .stat-top-list li { display: flex; justify-content: space-between; font-size: 0.82rem; background: rgba(255,255,255,0.05); padding: 8px 10px; border-radius: 8px; }
 .stat-top-list li span.stat-count { color: var(--text-sub); }
+
+/* Editor Visual en Vivo */
+.visual-editor-toolbar {
+  position: fixed; top: 50%; right: 20px; transform: translateY(-50%);
+  z-index: 600; width: 240px; background: rgba(18, 19, 28, 0.95);
+  backdrop-filter: blur(20px); border: 1px solid var(--card-border);
+  border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.visual-editor-toolbar.hidden { display: none; }
+.ve-toolbar-title { font-weight: 700; font-size: 1rem; }
+.ve-toolbar-hint { font-size: 0.75rem; color: var(--text-sub); margin: 0; line-height: 1.4; }
+
+.editable-highlight {
+  outline: 2px dashed var(--primary-color) !important;
+  outline-offset: 4px; cursor: pointer !important; position: relative;
+}
+.editable-highlight:hover { outline-style: solid !important; }
+
+/* El menú de ajustes se oculta con un slide-down + fade al entrar al editor */
+#modal-settings.ve-closing .modal-window { transform: translateX(100%) translateY(40px) !important; opacity: 0 !important; }
+
+.card-fit-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; padding: 8px 10px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
+.card-fit-btn.active { background: var(--primary-color); color: #12131c; font-weight: 700; }
+#input-card-border-color { width: 100%; height: 34px; border-radius: 8px; border: 1px solid var(--card-border); background: none; cursor: pointer; }
