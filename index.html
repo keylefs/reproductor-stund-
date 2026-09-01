@@ -9,7 +9,8 @@
   <link rel="icon" type="image/png" href="img/favicon.png">
 
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@400;600&family=Orbitron:wght@500;700&family=Pacifico&family=Poppins:wght@400;600&family=Roboto:wght@400;600&family=Cinzel:wght@500&family=Caveat:wght@600&family=Fira+Code&family=Oswald:wght@500&display=swap" rel="stylesheet">
+  <!-- Fuentes de Google Fonts actualizadas -->
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Cinzel:wght@500&family=Fira+Code&family=Inter:wght@400;600&family=Montserrat:wght@400;600&family=Orbitron:wght@500;700&family=Oswald:wght@500&family=Outfit:wght@400;600&family=Pacifico&family=Permanent+Marker&family=Poppins:wght@400;600&family=Roboto:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 </head>
 <body>
@@ -30,6 +31,10 @@
     <!-- Modo Enfoque (Ocultar Interfaz) -->
     <button id="btn-focus-mode" class="global-icon-btn" title="Modo Enfoque (Ocultar interfaz)">
       <svg id="focus-eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <!-- Modo Vehículo -->
+    <button id="btn-vehicle-mode" class="global-icon-btn" title="Modo Vehículo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm14 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5 17l1.5-6h11L19 17M6.5 11l1-3h9l1 3"/></svg>
     </button>
     <!-- Ventana Mini Player -->
     <button id="btn-mini-player" class="global-icon-btn" title="Mini Reproductor">
@@ -57,19 +62,50 @@
         <button class="preset-btn" data-preset="vocal">Voz</button>
         <button class="preset-btn" data-preset="reset">Flat</button>
       </div>
-      <div class="eq-sliders">
-        <div class="eq-band">
-          <input type="range" class="eq-band-range" min="-12" max="12" value="0" data-freq="60">
-          <span>60Hz</span>
+      <div class="eq-sliders" id="eq-sliders">
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="0"><span>32</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="1"><span>64</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="2"><span>125</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="3"><span>250</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="4"><span>500</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="5"><span>1k</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="6"><span>2k</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="7"><span>4k</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="8"><span>8k</span></div>
+        <div class="eq-band"><input type="range" class="eq-band-range" min="-12" max="12" value="0" data-index="9"><span>16k</span></div>
+      </div>
+      <div class="eq-extra-toggles">
+        <div class="eq-mini-toggle">
+          <span>Bass Boost</span>
+          <label class="switch"><input type="checkbox" id="toggle-bass-boost"><span class="slider"></span></label>
         </div>
-        <div class="eq-band">
-          <input type="range" class="eq-band-range" min="-12" max="12" value="0" data-freq="1000">
-          <span>1kHz</span>
+        <div class="eq-mini-toggle">
+          <span>Audio 8D</span>
+          <label class="switch"><input type="checkbox" id="toggle-8d-audio"><span class="slider"></span></label>
         </div>
-        <div class="eq-band">
-          <input type="range" class="eq-band-range" min="-12" max="12" value="0" data-freq="12000">
-          <span>12kHz</span>
-        </div>
+      </div>
+    </div>
+
+    <!-- PANEL VOZ / MÚSICA -->
+    <div class="eq-panel hidden" id="vm-panel">
+      <div class="eq-header">
+        <span>Separar Voz / Música</span>
+        <button id="btn-close-vm" class="icon-btn" title="Cerrar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p class="vm-hint">No es una separación perfecta (eso necesitaría inteligencia artificial): resalta o reduce lo que está centrado en la mezcla (casi siempre la voz), aplicado solo en el rango de frecuencia típico de la voz (200Hz-5kHz) para que el bajo y la batería casi no se vean afectados.</p>
+      <div class="eq-mini-toggle">
+        <span>Activar</span>
+        <label class="switch"><input type="checkbox" id="toggle-vm-enabled"><span class="slider"></span></label>
+      </div>
+      <div class="vm-slider-row">
+        <span>Voz</span>
+        <input type="range" id="input-voice-level" min="0" max="2" step="0.05" value="1">
+      </div>
+      <div class="vm-slider-row">
+        <span>Música</span>
+        <input type="range" id="input-music-level" min="0" max="2" step="0.05" value="1">
       </div>
     </div>
 
@@ -80,6 +116,7 @@
       <div class="top-bar">
         <button id="btn-eq-toggle" class="text-btn">EQ</button>
         <button id="btn-lyrics-toggle" class="text-btn">Letras</button>
+        <button id="btn-vm-toggle" class="text-btn">Voz/Música</button>
         <span id="sleep-timer-badge" class="timer-badge hidden">00:00</span>
       </div>
 
@@ -142,13 +179,14 @@
         <button id="btn-create-playlist" class="action-btn hidden">+ Crear Playlist</button>
       </div>
 
-      <!-- Cabecera dinámica cuando se navega dentro de una Playlist -->
+      <!-- Cabecera dinámica de Playlist -->
       <div id="playlist-view-header" class="playlist-view-header hidden">
         <div class="playlist-cover-wrapper">
           <img id="playlist-view-cover" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80" alt="Playlist Cover">
         </div>
         <h3 id="playlist-view-title">Nombre Playlist</h3>
         <div class="playlist-header-actions">
+          <button id="btn-play-playlist" class="action-btn">▶ Reproducir</button>
           <button id="btn-rename-playlist" class="action-btn">Renombrar</button>
           <button id="btn-delete-playlist" class="action-btn-danger">Eliminar Playlist</button>
         </div>
@@ -174,7 +212,7 @@
     <input type="file" id="file-input" accept="audio/mp3, audio/*" multiple hidden>
   </div>
 
-  <!-- VENTANA DE AJUSTES ESTILO LARK PLAYER (SLIDE MODULAR) -->
+  <!-- VENTANA DE AJUSTES -->
   <div class="modal-overlay hidden" id="modal-settings">
     <div class="modal-window settings-window">
       <div class="modal-header">
@@ -206,7 +244,40 @@
             </div>
             <div class="setting-card-content">
               <span class="setting-card-title">Tema y Diseño</span>
-              <span class="setting-card-desc">Colores, tamaño de lista, fuente y tamaño de texto</span>
+              <span class="setting-card-desc">Color dinámico, fuentes, cristal y fondos</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-audio">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Audio Avanzado y Control</span>
+              <span class="setting-card-desc">Normalizador, velocidad/pitch, mono y crossfade</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-data">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Gestión de Datos y Biblioteca</span>
+              <span class="setting-card-desc">Copia de seguridad JSON, caché e IndexedDB</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-cinema-settings">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Modo Cine y Letras</span>
+              <span class="setting-card-desc">Barra de progreso, alineación y escalado</span>
             </div>
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -233,17 +304,6 @@
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
 
-          <div class="setting-card-item" data-target="sub-playback">
-            <div class="setting-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-            </div>
-            <div class="setting-card-content">
-              <span class="setting-card-title">Ajustes de reproducción</span>
-              <span class="setting-card-desc">Fundido, sin pausa, sonido de fondo</span>
-            </div>
-            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-
           <div class="setting-card-item" data-target="sub-controls">
             <div class="setting-card-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
@@ -262,6 +322,50 @@
             <div class="setting-card-content">
               <span class="setting-card-title">Barra de control y notificaciones</span>
               <span class="setting-card-desc">Teclas Fn, carátula e información</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-miniplayer">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="11" y="11" width="8" height="8" rx="1"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Mini-Reproductor</span>
+              <span class="setting-card-desc">Fondo, opacidad y tamaño de la ventana flotante</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-karaoke">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Karaoke y Calibración de Letras</span>
+              <span class="setting-card-desc">Modo karaoke y ajustes de sincronización</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-mode-presets">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4M14 14h4"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Presets de Modo</span>
+              <span class="setting-card-desc">Juego, Noche o Estudio</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-animations">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Animaciones</span>
+              <span class="setting-card-desc">Activa o desactiva efectos de movimiento</span>
             </div>
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -291,15 +395,52 @@
               <h2 id="stat-play-time-detail">0h 0m 0s</h2>
               <span class="setting-desc">Nivel actual: <strong id="stat-rank-text">Principiante</strong></span>
             </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Escuchado hoy</span>
+                <span class="setting-desc" id="stat-today-time">0m 0s</span>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Artista más escuchado</span>
+                <span class="setting-desc" id="stat-top-artist">-</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info"><span class="setting-title">Top canciones</span></div>
+            </div>
+            <ul id="stat-top-songs" class="stat-top-list"></ul>
           </div>
         </div>
 
-        <!-- Sub-panel: Tema -->
+        <!-- Sub-panel: Tema y Diseño -->
         <div class="settings-panel settings-sub-panel" id="sub-theme">
           <button class="btn-sub-back">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
           </button>
           <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Color Dinámico Inteligente</span>
+                <span class="setting-desc">Adapta los colores del reproductor al arte del álbum activo</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-dynamic-color" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Transparencia y Cristal (Glassmorphism)</span>
+              <div class="range-with-value">
+                <input type="range" id="input-glass-opacity" min="0.2" max="1" step="0.05" value="0.85">
+                <span id="glass-opacity-val" class="setting-value-badge">85%</span>
+              </div>
+            </div>
+
             <div class="setting-item vertical">
               <span class="setting-title">Tamaño de lista de canciones</span>
               <div class="btn-group">
@@ -327,7 +468,7 @@
             </div>
 
             <div class="setting-item vertical">
-              <span class="setting-title">Color de Acento</span>
+              <span class="setting-title">Color de Acento Manual</span>
               <div class="color-picker-group">
                 <button class="color-dot active" data-color="#ffffff" style="background:#ffffff;"></button>
                 <button class="color-dot" data-color="#3b82f6" style="background:#3b82f6;"></button>
@@ -357,19 +498,178 @@
             </div>
 
             <div class="setting-item vertical">
-              <span class="setting-title">Tipografía</span>
+              <span class="setting-title">Tipografía del Sistema (10+ Estilos)</span>
               <select id="select-font" class="custom-select">
-                <option value="Inter, sans-serif">Inter (Predeterminada)</option>
-                <option value="Roboto, sans-serif">Roboto Modern</option>
-                <option value="Poppins, sans-serif">Poppins Soft</option>
-                <option value="Montserrat, sans-serif">Montserrat Bold</option>
-                <option value="'Orbitron', sans-serif">Orbitron Gamer</option>
-                <option value="'Pacifico', cursive">Pacifico Retro</option>
-                <option value="'Cinzel', serif">Cinzel Elegante</option>
-                <option value="'Caveat', cursive">Caveat Cursiva</option>
-                <option value="'Fira Code', monospace">Fira Code Hacker</option>
-                <option value="'Oswald', sans-serif">Oswald Compacta</option>
+                <option value="Inter, sans-serif">Inter (Predeterminada Clean)</option>
+                <option value="Roboto, sans-serif">Roboto (Modern Minimal)</option>
+                <option value="Poppins, sans-serif">Poppins (Urbana & Suave)</option>
+                <option value="Montserrat, sans-serif">Montserrat (Moderna Con Carácter)</option>
+                <option value="'Outfit', sans-serif">Outfit (Contemporánea Fluida)</option>
+                <option value="'Space Grotesk', sans-serif">Space Grotesk (Vanguardista)</option>
+                <option value="'Orbitron', sans-serif">Orbitron (Cyberpunk Digital)</option>
+                <option value="'Permanent Marker', cursive">Permanent Marker (Marcador Graffiti)</option>
+                <option value="'Pacifico', cursive">Pacifico (Vintage Cursiva)</option>
+                <option value="'Caveat', cursive">Caveat (Manuscrito Orgánico)</option>
+                <option value="'Cinzel', serif">Cinzel (Clásica & Dramática)</option>
+                <option value="'Fira Code', monospace">Fira Code (Hacker Console)</option>
+                <option value="'Oswald', sans-serif">Oswald (Compacta de Cartel)</option>
               </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Audio Avanzado y Control -->
+        <div class="settings-panel settings-sub-panel" id="sub-audio">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Normalización de Volumen</span>
+                <span class="setting-desc">Iguala automáticamente el volumen entre canciones distintas</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-normalize-volume">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Velocidad y Tono (Pitch)</span>
+              <div class="range-with-value">
+                <input type="range" id="input-audio-speed" min="0.5" max="2.0" step="0.05" value="1.0">
+                <span id="audio-speed-val" class="setting-value-badge">1.00x</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Modo Canal Único (Mono)</span>
+                <span class="setting-desc">Combina los canales audio L y R (ideal para usar 1 solo auricular)</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-mono-audio">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Limitador de Volumen (Salud Auditiva)</span>
+                <span class="setting-desc">Se activa solo si detecta picos de volumen excesivos</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-volume-limiter">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Balance L / R</span>
+              <input type="range" id="input-audio-balance" min="-1" max="1" step="0.05" value="0">
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Reproducir junto a otras apps</span>
+                <span class="setting-desc">Permite mantener la música en segundo plano</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-bg-play" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Reproducción sin pausa (Gapless)</span>
+                <span class="setting-desc">Elimina los silencios muertos entre temas</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-gapless" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Efecto Crossfade</span>
+                <span class="setting-desc">Transición con fundido entre pistas</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-crossfade" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Gestión de Datos y Biblioteca -->
+        <div class="settings-panel settings-sub-panel" id="sub-data">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item vertical">
+              <span class="setting-title">Copia de Seguridad de la Biblioteca</span>
+              <span class="setting-desc">Exporta o restaura tus playlists, favoritos y configuraciones.</span>
+              <div class="btn-group-row">
+                <button id="btn-export-json" class="action-btn">Exportar (.json)</button>
+                <label class="action-btn custom-file-label">
+                  Importar (.json)
+                  <input type="file" id="input-import-json" accept=".json" hidden>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Almacenamiento e IndexedDB</span>
+              <span class="setting-desc">Espacio usado por canciones guardadas y carátulas:</span>
+              <div class="storage-meter-container">
+                <div class="storage-bar-track">
+                  <div class="storage-bar-fill" id="storage-bar-fill" style="width: 5%;"></div>
+                </div>
+                <span id="storage-text-usage" class="setting-desc-small">Calculando uso...</span>
+              </div>
+              <button id="btn-clear-cache" class="action-btn-danger" style="margin-top: 10px;">Limpiar Caché de Carátulas</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Modo Cine y Letras -->
+        <div class="settings-panel settings-sub-panel" id="sub-cinema-settings">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Barra de Tiempo en Modo Cine</span>
+                <span class="setting-desc">Muestra u oculta la línea de reproducción para elegir el minuto</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-cinema-seekbar" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Alineación de Texto en Letras</span>
+              <div class="btn-group">
+                <button class="align-btn" data-align="left">Izquierda</button>
+                <button class="align-btn active" data-align="center">Centro</button>
+                <button class="align-btn" data-align="right">Derecha</button>
+              </div>
+            </div>
+
+            <div class="setting-item vertical">
+              <span class="setting-title">Escalado y Tamaño Modo Cine</span>
+              <div class="btn-group">
+                <button class="cinema-scale-btn active" data-scale="normal">Normal</button>
+                <button class="cinema-scale-btn" data-scale="large">Grande (+25%)</button>
+                <button class="cinema-scale-btn" data-scale="max">Máximo</button>
+              </div>
             </div>
           </div>
         </div>
@@ -421,47 +721,6 @@
           </div>
         </div>
 
-        <!-- Sub-panel: Ajustes de reproducción -->
-        <div class="settings-panel settings-sub-panel" id="sub-playback">
-          <button class="btn-sub-back">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
-          </button>
-          <div class="sub-content">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">Reproducir junto a otras apps</span>
-                <span class="setting-desc">Permite reproducir audio sin pausar al cambiar</span>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="toggle-bg-play" checked>
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">Reproducción sin pausa</span>
-                <span class="setting-desc">Elimina silencios entre pistas</span>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="toggle-gapless" checked>
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">Efecto Crossfade</span>
-                <span class="setting-desc">Transición con fundido suave</span>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="toggle-crossfade" checked>
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
         <!-- Sub-panel: Atajos de teclado -->
         <div class="settings-panel settings-sub-panel" id="sub-controls">
           <button class="btn-sub-back">
@@ -488,6 +747,14 @@
               <div class="hotkey-row">
                 <span>Silenciar Audio</span>
                 <button class="hotkey-bind-btn" data-action="toggleMute">KeyM</button>
+              </div>
+              <div class="hotkey-row">
+                <span>Abrir Modo Cine</span>
+                <button class="hotkey-bind-btn" data-action="toggleCinema">KeyQ</button>
+              </div>
+              <div class="hotkey-row">
+                <span>Mostrar Letras</span>
+                <button class="hotkey-bind-btn" data-action="toggleLyrics">KeyE</button>
               </div>
             </div>
           </div>
@@ -534,6 +801,119 @@
           </div>
         </div>
 
+        <!-- Sub-panel: Mini-Reproductor -->
+        <div class="settings-panel settings-sub-panel" id="sub-miniplayer">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info"><span class="setting-title">Fondo</span></div>
+            </div>
+            <div class="btn-group">
+              <button class="mp-bg-btn active" data-mpbg="acrylic">Acrílico / Difuminado</button>
+              <button class="mp-bg-btn" data-mpbg="black">Negro</button>
+              <button class="mp-bg-btn" data-mpbg="white">Blanco</button>
+              <button class="mp-bg-btn" data-mpbg="transparent">Transparente</button>
+            </div>
+            <div class="setting-item vertical" style="margin-top: 10px;">
+              <span class="setting-title">Opacidad del fondo</span>
+              <input type="range" id="input-mp-opacity" min="0.2" max="1" step="0.05" value="0.85">
+            </div>
+            <div class="setting-item vertical">
+              <span class="setting-title">Tamaño de la ventana</span>
+              <input type="range" id="input-mp-scale" min="0.8" max="1.4" step="0.05" value="1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Karaoke y Calibración de Letras -->
+        <div class="settings-panel settings-sub-panel" id="sub-karaoke">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <button id="btn-open-karaoke" class="menu-opt-btn primary-opt">Abrir Modo Karaoke / Letras</button>
+            <button id="btn-configure-karaoke" class="menu-opt-btn">Configurar (Calibración y Fondo)</button>
+
+            <div class="setting-item" style="margin-top: 10px;">
+              <div class="setting-info">
+                <span class="setting-title">Fondo visual de la pantalla de letras</span>
+                <span class="setting-desc">Elige cómo se ve el fondo del Modo Cine / Karaoke</span>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="lyrics-bg-mode-btn active" data-bg="auto">Automático</button>
+              <button class="lyrics-bg-mode-btn" data-bg="cover">Carátula difuminada</button>
+              <button class="lyrics-bg-mode-btn" data-bg="animated">Fondo animado</button>
+              <button class="lyrics-bg-mode-btn" data-bg="black">Negro sólido</button>
+              <button class="lyrics-bg-mode-btn" data-bg="white">Blanco sólido</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Presets de Modo -->
+        <div class="settings-panel settings-sub-panel" id="sub-mode-presets">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <button id="preset-normal" class="menu-opt-btn">Normal (quitar presets)</button>
+            <button id="preset-game" class="menu-opt-btn">🎮 Modo Juego (menos animaciones, ahorra recursos)</button>
+            <button id="preset-night" class="menu-opt-btn">🌙 Modo Noche (filtro cálido, protege la vista)</button>
+            <button id="preset-study" class="menu-opt-btn">📚 Modo Estudio (colores neutros, sin distracciones)</button>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Animaciones -->
+        <div class="settings-panel settings-sub-panel" id="sub-animations">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Activar todas las animaciones</span>
+                <span class="setting-desc">Interruptor maestro</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-anim-master" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Marco deslizante en la lista</span>
+                <span class="setting-desc">El resaltado de la canción activa se desliza suave</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-anim-glide" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Animación al agregar canciones</span>
+                <span class="setting-desc">Aparecen con un desvanecido y deslizamiento</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-anim-add-song" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Transiciones de ventanas</span>
+                <span class="setting-desc">Paneles y modales aparecen con transición suave</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-anim-modals" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -569,7 +949,7 @@
     </div>
   </div>
 
-  <!-- MODAL MENÚ DE 3 PUNTOS (OPCIONES DE CANCIÓN) -->
+  <!-- MODAL MENÚ DE OPCIONES DE CANCIÓN -->
   <div class="modal-overlay hidden" id="modal-song-menu">
     <div class="modal-window song-menu-window">
       <div class="modal-header">
@@ -579,6 +959,10 @@
         </button>
       </div>
       <div class="modal-menu-options">
+        <button id="opt-edit-song" class="menu-opt-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          Editar Nombre / Portada
+        </button>
         <button id="opt-add-to-playlist" class="menu-opt-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Añadir a Playlist
@@ -591,6 +975,30 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           Borrar Canción
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR CANCIÓN -->
+  <div class="modal-overlay hidden" id="modal-edit-song">
+    <div class="modal-window edit-song-window">
+      <div class="modal-header">
+        <h3>Editar Canción</h3>
+        <button id="btn-close-edit-song" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="edit-song-body">
+        <div class="edit-cover-wrapper" id="edit-cover-wrapper" title="Cambiar portada">
+          <img id="edit-cover-preview" src="" alt="Portada">
+          <div class="edit-cover-overlay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </div>
+        </div>
+        <input type="file" id="input-edit-cover" accept="image/*" hidden>
+        <label class="edit-field-label" for="input-edit-title">Nombre de la canción</label>
+        <input type="text" id="input-edit-title" class="edit-title-input" maxlength="120" placeholder="Nombre de la canción">
+        <button id="btn-save-song-edit" class="menu-opt-btn primary-opt">Guardar Cambios</button>
       </div>
     </div>
   </div>
@@ -616,7 +1024,15 @@
     <div class="lyrics-header">
       <h3>Letra</h3>
       <div class="lyrics-actions">
-        <button id="btn-edit-lyrics" class="icon-btn">Editar tu letra</button>
+        <button id="btn-cinema-mode" class="icon-btn" title="Modo Cine">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
+        </button>
+        <button id="btn-calibrate-lyrics" class="icon-btn" title="Calibrar Letras">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        </button>
+        <button id="btn-edit-lyrics" class="icon-btn" title="Editar tu letra">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
         <button id="btn-close-lyrics" class="icon-btn" title="Cerrar">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -631,8 +1047,130 @@
     </div>
   </div>
 
+  <!-- MODO CINE DE LETRAS -->
+  <div class="cinema-mode" id="cinema-mode">
+    <div class="cinema-bg" id="cinema-bg"></div>
+    <button id="btn-close-cinema" class="icon-btn cinema-close" title="Cerrar Modo Cine">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="cinema-content">
+      <div class="cinema-cover-col">
+        <img id="cinema-cover" class="cinema-cover-art" src="" alt="Portada">
+        <div class="cinema-track-info">
+          <h4 id="cinema-title">-</h4>
+          <p id="cinema-artist">-</p>
+        </div>
+
+        <div class="cinema-seekbar-wrapper" id="cinema-seekbar-wrapper">
+          <span id="cinema-current-time">0:00</span>
+          <div class="progress-container" id="cinema-progress-container">
+            <div class="progress-bar" id="cinema-progress"></div>
+          </div>
+          <span id="cinema-duration">0:00</span>
+        </div>
+
+        <div class="cinema-controls">
+          <button id="cinema-prev" class="icon-btn" title="Anterior">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button id="cinema-play" class="btn-play" title="Reproducir / Pausa">
+            <svg id="cinema-play-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button id="cinema-next" class="icon-btn" title="Siguiente">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+          <button id="cinema-eq" class="icon-btn" title="Ecualizador">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="cinema-lyrics-col">
+        <div class="lyrics-body cinema-lyrics-body" id="cinema-lyrics-body">
+          <p class="lyrics-placeholder">Sin letra disponible.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CALIBRAR LETRAS -->
+  <div class="modal-overlay hidden" id="modal-calibrate-lyrics">
+    <div class="modal-window calibrate-window">
+      <div class="modal-header">
+        <h3>Calibrar Letras</h3>
+        <button id="btn-close-calibrate" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="calibrate-body">
+        <div class="calibrate-field">
+          <label for="calibrate-scale">Tamaño de letra (Escala)</label>
+          <input type="range" id="calibrate-scale" min="60" max="180" step="5" value="100">
+          <span id="calibrate-scale-value" class="calibrate-value">100%</span>
+        </div>
+        <div class="calibrate-field">
+          <label for="calibrate-speed">Velocidad de la letra</label>
+          <input type="range" id="calibrate-speed" min="0.5" max="2" step="0.05" value="1">
+          <span id="calibrate-speed-value" class="calibrate-value">1.00x</span>
+        </div>
+        <div class="calibrate-field">
+          <label>Desfase (si la letra va adelantada o atrasada)</label>
+          <div class="calibrate-offset-row">
+            <button id="calibrate-offset-back" class="menu-opt-btn">« Retroceso</button>
+            <span id="calibrate-offset-value" class="calibrate-value">0.0s</span>
+            <button id="calibrate-offset-forward" class="menu-opt-btn">Adelanto »</button>
+          </div>
+        </div>
+        <div class="calibrate-field">
+          <label>BPM de la canción (Pulsos Por Minuto)</label>
+          <div class="calibrate-bpm-row">
+            <input type="number" id="input-bpm" class="calibrate-bpm-input" min="40" max="240" step="1" placeholder="Ej: 120">
+            <button id="btn-reset-bpm" class="icon-btn" title="Reiniciar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            </button>
+          </div>
+          <p class="calibrate-hint">Escribe el BPM real de la canción (lo puedes buscar en internet: "[nombre de la canción] BPM"). Con eso, la velocidad de la letra se ajusta sola para que se sincronice mejor.</p>
+        </div>
+        <button id="btn-save-calibration" class="menu-opt-btn primary-opt">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <audio id="audio-player-1" crossorigin="anonymous"></audio>
   <audio id="audio-player-2" crossorigin="anonymous"></audio>
+
+  <!-- MODO VEHÍCULO -->
+  <div class="vehicle-mode" id="vehicle-mode">
+    <div class="cinema-bg" id="vehicle-bg"></div>
+    <button id="btn-exit-vehicle" class="icon-btn vehicle-exit" title="Salir del Modo Vehículo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <img id="vehicle-cover" class="vehicle-cover-art" src="" alt="Portada">
+    <h2 id="vehicle-title">-</h2>
+    <p id="vehicle-artist">-</p>
+    <div class="vehicle-controls">
+      <button id="vehicle-prev" class="icon-btn vehicle-btn" title="Anterior">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button id="vehicle-play" class="btn-play vehicle-btn-play" title="Reproducir / Pausa">
+        <svg id="vehicle-play-icon" width="38" height="38" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button id="vehicle-next" class="icon-btn vehicle-btn" title="Siguiente">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- OVERLAY GLOBAL DE ARRASTRAR ARCHIVOS -->
+  <div class="dragdrop-overlay" id="dragdrop-overlay">
+    <div class="dragdrop-frame">
+      <span class="dragdrop-corner dragdrop-tl"></span>
+      <span class="dragdrop-corner dragdrop-tr"></span>
+      <span class="dragdrop-corner dragdrop-bl"></span>
+      <span class="dragdrop-corner dragdrop-br"></span>
+      <p>Arrastra tu música aquí</p>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
