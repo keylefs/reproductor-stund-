@@ -44,6 +44,10 @@
     <button id="btn-fullscreen" class="global-icon-btn" title="Pantalla Completa">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
     </button>
+    <!-- Modo Concluidor (mezclar varias canciones en cadena) -->
+    <button id="btn-concludor-mode" class="global-icon-btn" title="Modo Concluidor">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><line x1="7.5" y1="12" x2="9.5" y2="12"/><line x1="14.5" y1="12" x2="16.5" y2="12"/></svg>
+    </button>
   </div>
 
   <div class="app-layout" id="app-layout">
@@ -118,6 +122,9 @@
         <button id="btn-lyrics-toggle" class="text-btn">Letras</button>
         <button id="btn-vm-toggle" class="text-btn">Voz/Música</button>
         <span id="sleep-timer-badge" class="timer-badge hidden">00:00</span>
+        <button id="btn-close-mobile-player" class="icon-btn mobile-only-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
 
       <div class="cover-container" id="cover-container">
@@ -126,7 +133,22 @@
 
       <div class="song-info">
         <h2 id="title">Sin canción cargada</h2>
-        <h3 id="artist">Sube tus archivos MP3</h3>
+        <div class="song-info-row">
+          <h3 id="artist">Sube tus archivos MP3</h3>
+          <button id="btn-modes-menu" class="icon-btn" title="Más modos">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Menú "más dinámico" que agrupa Enfoque / Vehículo / Concluidor / Cine / Pantalla Completa / Mini Reproductor -->
+      <div class="modes-menu hidden" id="modes-menu">
+        <button id="modes-menu-focus" class="menu-opt-btn">👁️ Modo Enfoque</button>
+        <button id="modes-menu-vehicle" class="menu-opt-btn">🚗 Modo Vehículo</button>
+        <button id="modes-menu-concludor" class="menu-opt-btn">🔗 Modo Concluidor</button>
+        <button id="modes-menu-cinema" class="menu-opt-btn">🎬 Modo Cine</button>
+        <button id="modes-menu-fullscreen" class="menu-opt-btn">⛶ Pantalla Completa</button>
+        <button id="modes-menu-mini" class="menu-opt-btn">🗗 Mini Reproductor</button>
       </div>
 
       <div class="progress-container" id="progress-container">
@@ -178,6 +200,7 @@
         </div>
         <button id="btn-create-playlist" class="action-btn hidden">+ Crear Playlist</button>
       </div>
+      <input type="text" id="library-search" class="edit-title-input" placeholder="Buscar en tu biblioteca..." style="margin:8px 0;">
 
       <!-- Cabecera dinámica de Playlist -->
       <div id="playlist-view-header" class="playlist-view-header hidden">
@@ -423,6 +446,17 @@
           </button>
           <div class="sub-content">
             <button id="btn-open-visual-editor" class="menu-opt-btn primary-opt">🎨 Abrir Editor Visual de Reproductor</button>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Modo Interfaz Celular</span>
+                <span class="setting-desc">Diseño vertical con barra inferior, estilo app de celular (tipo Lark Player)</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-mobile-layout">
+                <span class="slider"></span>
+              </label>
+            </div>
 
             <div class="setting-item">
               <div class="setting-info">
@@ -1174,6 +1208,115 @@
   </div>
 
   <div id="night-mode-overlay"></div>
+  <div id="toast-container"></div>
+
+  <!-- MODO INTERFAZ CELULAR: barra "reproduciendo ahora" compacta, se expande al tocarla -->
+  <div class="mobile-nowplaying-bar" id="mobile-nowplaying-bar">
+    <img id="mobile-np-cover" src="" alt="Portada">
+    <div class="mobile-np-info">
+      <div id="mobile-np-title" class="mobile-np-title">Sin canción cargada</div>
+      <div id="mobile-np-artist" class="mobile-np-artist">-</div>
+    </div>
+    <button id="mobile-np-play" class="icon-btn" title="Reproducir / Pausa">
+      <svg id="mobile-np-play-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="mobile-np-progress"><div id="mobile-np-progress-fill" class="mobile-np-progress-fill"></div></div>
+  </div>
+
+  <!-- MODO INTERFAZ CELULAR: barra inferior de navegación -->
+  <div class="mobile-tab-bar" id="mobile-tab-bar">
+    <button class="mobile-tab-btn active" data-tab="inicio">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      Inicio
+    </button>
+    <button class="mobile-tab-btn" data-tab="buscar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Buscar
+    </button>
+    <button class="mobile-tab-btn" data-tab="ajustes">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Ajustes
+    </button>
+  </div>
+
+  <!-- MODO CONCLUIDOR -->
+  <div class="concludor-mode" id="concludor-mode">
+    <div class="concludor-header">
+      <h2>MODO CONCLUIDOR <span>— MEZCLA FINAL</span></h2>
+      <div class="concludor-header-actions">
+        <button id="btn-concludor-finish" class="concludor-finish-btn">Concluir</button>
+        <button id="btn-concludor-close" class="icon-btn" title="Salir sin guardar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="concludor-carousel-wrapper">
+      <div class="concludor-cable" id="concludor-cable"></div>
+      <div class="concludor-carousel" id="concludor-carousel">
+        <p class="empty-msg">Toca "Elegir Música" para armar tu cadena de canciones.</p>
+      </div>
+    </div>
+
+    <div class="concludor-eq-viz" id="concludor-eq-viz"></div>
+
+    <div class="concludor-bottom-bar">
+      <div class="concludor-src-group">
+        <button id="btn-concludor-voice" class="concludor-src-btn" title="Resaltar Voz">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg>
+          Voz
+        </button>
+        <button id="btn-concludor-music" class="concludor-src-btn active" title="Resaltar Música">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Música
+        </button>
+      </div>
+      <button id="btn-concludor-add" class="concludor-src-btn" title="Elegir Música">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        Elegir Música
+      </button>
+      <button id="btn-concludor-play" class="concludor-play-btn">▶ REPRODUCIR MEZCLA COMPLETA</button>
+    </div>
+  </div>
+
+  <!-- MODAL AGREGAR CANCIÓN AL CONCLUIDOR -->
+  <div class="modal-overlay hidden" id="modal-concludor-add">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 id="concludor-add-title">Elegir Música</h3>
+        <button id="btn-close-concludor-add" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <input type="text" id="concludor-search" class="edit-title-input" placeholder="Buscar canción o artista..." style="margin-bottom:10px;">
+      <ul id="concludor-add-list" class="playlist-view list-small"></ul>
+
+      <div class="concludor-trim-view hidden" id="concludor-trim-view">
+        <div class="concludor-trim-info">
+          <img id="concludor-trim-cover" src="" alt="Portada">
+          <div>
+            <div id="concludor-trim-title" class="concludor-trim-title"></div>
+            <div id="concludor-trim-artist" class="concludor-trim-artist"></div>
+          </div>
+        </div>
+        <p class="calibrate-hint">Arrastra los bordes amarillos para recortar, y la línea blanca para elegir el segundo exacto donde se conecta con la siguiente canción.</p>
+        <canvas id="concludor-trim-waveform" width="360" height="90" class="concludor-waveform"></canvas>
+        <div class="concludor-trim-times">
+          <span>Inicio: <b id="concludor-trim-start-value">0:00</b></span>
+          <span>Fin: <b id="concludor-trim-end-value">0:20</b></span>
+          <span>Conexión: <b id="concludor-trim-fade-value">0:20</b></span>
+        </div>
+        <div class="calibrate-field">
+          <label>Fundido de salida (segundos antes de conectar)</label>
+          <input type="range" id="concludor-trim-fadeout" min="0" max="8" step="0.5" value="2">
+          <span id="concludor-trim-fadeout-value" class="calibrate-value">2.0s</span>
+        </div>
+        <button id="btn-concludor-preview" class="menu-opt-btn">▶ Escuchar fragmento</button>
+        <button id="btn-concludor-confirm-add" class="menu-opt-btn primary-opt">Agregar a la Cadena</button>
+        <button id="btn-concludor-back-list" class="menu-opt-btn">« Volver a la lista</button>
+      </div>
+    </div>
+  </div>
 
   <!-- BARRA FLOTANTE DEL EDITOR VISUAL -->
   <div class="visual-editor-toolbar hidden" id="visual-editor-toolbar">
@@ -1223,6 +1366,7 @@
         </div>
 
         <button id="btn-apply-card-style" class="menu-opt-btn primary-opt">Aplicar</button>
+        <button id="btn-download-card-template" class="menu-opt-btn">📥 Descargar Plantilla (PNG)</button>
         <button id="btn-clear-card-style" class="menu-opt-btn danger">Quitar Personalización</button>
       </div>
     </div>
