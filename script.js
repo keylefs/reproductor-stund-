@@ -242,6 +242,7 @@ let audioCtx, track1, track2;
 let eqFilters = [];
 let bassBoostFilter, pannerNode, lfo8d, lfoGain8d, limiterNode;
 let midGain, sideGain;
+let concludorAnalyser;
 let stereoBypassGain, monoSplitter, monoSumGain, monoMerger, monoOutGain;
 
 const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
@@ -356,6 +357,11 @@ function initAudioContext() {
     monoSumGain.connect(monoMerger, 0, 1);
     monoMerger.connect(monoOutGain);
     monoOutGain.connect(audioCtx.destination);
+
+    // Analizador para el visualizador de frecuencias del Modo Concluidor (dato de audio real, no decorativo)
+    concludorAnalyser = audioCtx.createAnalyser();
+    concludorAnalyser.fftSize = 64;
+    limiterNode.connect(concludorAnalyser);
 
     applyAudioEngineSettings();
   } catch (err) {
@@ -480,6 +486,21 @@ if (toggleVmEnabled) {
       if (inputMusicLevel) inputMusicLevel.value = 1;
     }
   });
+}
+
+// Mensajes tipo "toast" abajo a la izquierda, en vez del alert() feo del navegador.
+const toastContainer = document.getElementById('toast-container');
+function showToast(message, type = 'info', duration = 4000) {
+  if (!toastContainer) { console.warn(message); return; }
+  const toast = document.createElement('div');
+  toast.className = 'app-toast' + (type === 'error' ? ' toast-error' : '');
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('active'));
+  setTimeout(() => {
+    toast.classList.remove('active');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
 }
 
 function playSFX(type = 'click') {
@@ -817,10 +838,11 @@ function loadSong(index, shouldPlay = true) {
   applyAudioEngineSettings();
   syncMiniPlayer(true);
   syncVehicleMode();
+  syncMobileNowPlaying();
   renderPlaylist();
 }
 
-function playSongWithCrossfade(newUrl) {
+function playSongWithCrossfade(newUrl, startAt = 0) {
   initAudioContext();
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -828,8 +850,14 @@ function playSongWithCrossfade(newUrl) {
   const currentAudio = activeAudio;
 
   nextAudio.src = newUrl;
-  nextAudio.currentTime = 0;
   nextAudio.volume = 0;
+  if (startAt) {
+    const seekNext = () => { nextAudio.currentTime = startAt; nextAudio.removeEventListener('loadedmetadata', seekNext); };
+    if (nextAudio.readyState >= 1) nextAudio.currentTime = startAt;
+    else nextAudio.addEventListener('loadedmetadata', seekNext);
+  } else {
+    nextAudio.currentTime = 0;
+  }
 
   const playPromise = nextAudio.play();
   if (playPromise !== undefined) {
@@ -867,6 +895,7 @@ function playSong() {
       if (cinemaPlayIcon && playIcon) cinemaPlayIcon.innerHTML = playIcon.innerHTML;
       syncMiniPlayer();
       syncVehicleMode();
+  syncMobileNowPlaying();
     }).catch(err => console.error("Error en reproducción:", err));
   }
 }
@@ -878,6 +907,7 @@ function pauseSong() {
   activeAudio.pause();
   syncMiniPlayer();
   syncVehicleMode();
+  syncMobileNowPlaying();
 }
 
 if (playBtn) playBtn.addEventListener('click', () => { playSFX('click'); playerCard.classList.contains('playing') ? pauseSong() : playSong(); });
@@ -902,6 +932,11 @@ if (loopBtn) loopBtn.addEventListener('click', () => { playSFX('click'); isLoop 
     if (isLoop) {
       a.currentTime = 0;
       a.play();
+    } else if (concludorPlaying) {
+      // Si ya hicimos un crossfade manual hacia la siguiente pista, "activeAudio" ya cambió;
+      // si esta pista vieja igual llega a su final natural, no hay que avanzar dos veces
+      // (eso era el bug de "sincronización" — se desincronizaba por un doble avance).
+      if (a === activeAudio) advanceConcludorChain();
     } else {
       if (nextBtn) nextBtn.click();
     }
@@ -979,9 +1014,17 @@ if (btnFullscreen) {
   });
 }
 
+// El mini reproductor abre una ventana nueva (window.open), algo que en Chrome de celular
+// casi nunca funciona bien (se bloquea o abre como pestaña rara). En celular avisamos en vez de fallar solo.
+const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 480;
+
 if (btnMiniPlayer) {
   btnMiniPlayer.addEventListener('click', () => {
     playSFX('open');
+    if (isMobileDevice) {
+      showToast('El Mini Reproductor es una función de escritorio (abre una ventana aparte) y no está disponible en el navegador de celular. Usa el reproductor principal.', 'error', 5000);
+      return;
+    }
     if (miniWin && !miniWin.closed) { miniWin.focus(); return; }
     miniWin = window.open("", "MiniPlayer", "width=300,height=430,resizable=yes");
     if (!miniWin) return;
@@ -1207,7 +1250,7 @@ if (btnPlayPlaylist) {
       const realIndex = realSong ? songList.indexOf(realSong) : -1;
       if (realIndex > -1) { loadSong(realIndex); return; }
     }
-    alert('Ninguna canción de esta playlist está disponible en tu biblioteca actual.');
+    showToast('Ninguna canción de esta playlist está disponible en tu biblioteca actual.', 'error');
   });
 }
 
@@ -1403,7 +1446,7 @@ if (btnSavePlaylist) {
   });
 }
 
-if (btnMainMenu) btnMainMenu.addEventListener('click', () => { playSFX('open'); modalSettings.classList.add('active'); });
+if (btnMainMenu) btnMainMenu.addEventListener('click', () => { playSFX('open'); resetSettingsSlide(); modalSettings.classList.add('active'); });
 if (btnCloseSettings) btnCloseSettings.addEventListener('click', () => { playSFX('close'); closeModalSettings(); });
 
 function closeModalSettings() {
@@ -2072,6 +2115,7 @@ if (btnVehicleMode) {
     if (songList.length === 0) return;
     if (vehicleMode) vehicleMode.classList.add('active');
     syncVehicleMode();
+  syncMobileNowPlaying();
   });
 }
 if (btnExitVehicle) {
@@ -2194,7 +2238,9 @@ let visualEditorActive = false;
 const EDITABLE_CARDS = {
   'player-card': document.getElementById('player-card'),
   'eq-panel': document.getElementById('eq-panel'),
-  'vm-panel': document.getElementById('vm-panel')
+  'vm-panel': document.getElementById('vm-panel'),
+  'library-panel': document.getElementById('library-panel'),
+  'lyrics-panel': document.getElementById('lyrics-panel')
 };
 let customCardStyles = {};
 try { customCardStyles = JSON.parse(localStorage.getItem('customCardStyles') || '{}'); } catch (e) { customCardStyles = {}; }
@@ -2237,6 +2283,7 @@ const btnClearCardStyle = document.getElementById('btn-clear-card-style');
 
 let editingCardKey = null;
 let pendingCardBgImage = null;
+let forcedVisibleCards = [];
 
 function enterVisualEditor() {
   visualEditorActive = true;
@@ -2245,12 +2292,31 @@ function enterVisualEditor() {
     setTimeout(() => { modalSettings.classList.remove('active', 've-closing'); }, 300);
   }
   if (visualEditorToolbar) visualEditorToolbar.classList.remove('hidden');
-  Object.values(EDITABLE_CARDS).forEach(el => { if (el) el.classList.add('editable-highlight'); });
+  forcedVisibleCards = [];
+  Object.entries(EDITABLE_CARDS).forEach(([key, el]) => {
+    if (!el) return;
+    el.classList.add('editable-highlight');
+    // Algunos paneles (EQ, Voz/Música, Letras) normalmente están ocultos hasta que los abres:
+    // los mostramos igual durante la edición para que se puedan tocar y personalizar.
+    if (el.classList.contains('hidden')) {
+      el.classList.remove('hidden');
+      forcedVisibleCards.push({ el, type: 'hidden' });
+    }
+    if (key === 'lyrics-panel' && !el.classList.contains('active')) {
+      el.classList.add('active');
+      forcedVisibleCards.push({ el, type: 'active' });
+    }
+  });
 }
 function exitVisualEditor() {
   visualEditorActive = false;
   if (visualEditorToolbar) visualEditorToolbar.classList.add('hidden');
   Object.values(EDITABLE_CARDS).forEach(el => { if (el) el.classList.remove('editable-highlight'); });
+  forcedVisibleCards.forEach(({ el, type }) => {
+    if (type === 'hidden') el.classList.add('hidden');
+    else if (type === 'active') el.classList.remove('active');
+  });
+  forcedVisibleCards = [];
 }
 
 if (btnOpenVisualEditor) btnOpenVisualEditor.addEventListener('click', () => { playSFX('open'); enterVisualEditor(); });
@@ -2326,9 +2392,96 @@ if (btnApplyCardStyle) {
 
     customCardStyles[editingCardKey] = style;
     try { localStorage.setItem('customCardStyles', JSON.stringify(customCardStyles)); }
-    catch (err) { alert('La imagen es muy grande para guardarse permanentemente. Prueba con una imagen más liviana.'); }
+    catch (err) { showToast('La imagen es muy grande para guardarse permanentemente. Prueba con una imagen más liviana.', 'error'); }
     applyCardStyle(EDITABLE_CARDS[editingCardKey], style);
     closeModal(modalCardEditor);
+  });
+}
+
+// Dibuja SOLO el marco (fondo, borde y sombra) de la tarjeta en un canvas, sin su
+// ícono ni texto, y lo descarga como PNG con transparencia real.
+function roundRectPath(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function downloadCardTemplate(key) {
+  const el = EDITABLE_CARDS[key];
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const w = Math.max(Math.round(rect.width), 40);
+  const h = Math.max(Math.round(rect.height), 40);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  const radius = inputCardRadius ? parseInt(inputCardRadius.value, 10) : 20;
+  const borderWidth = inputCardBorderWidth ? parseInt(inputCardBorderWidth.value, 10) : 1;
+  const borderColor = inputCardBorderColor ? inputCardBorderColor.value : '#ffffff';
+  const shadow = inputCardShadow ? parseInt(inputCardShadow.value, 10) : 0;
+  const glass = inputCardGlass ? parseFloat(inputCardGlass.value) : 0.9;
+  const bgImageSrc = pendingCardBgImage || (customCardStyles[key] && customCardStyles[key].bgImage);
+
+  function strokeBorder() {
+    if (borderWidth > 0) {
+      roundRectPath(ctx, borderWidth / 2, borderWidth / 2, w - borderWidth, h - borderWidth, radius);
+      ctx.lineWidth = borderWidth;
+      ctx.strokeStyle = borderColor;
+      ctx.stroke();
+    }
+  }
+
+  function triggerDownload() {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `plantilla-${key}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  }
+
+  if (bgImageSrc) {
+    const img = new Image();
+    img.onload = () => {
+      roundRectPath(ctx, borderWidth / 2, borderWidth / 2, w - borderWidth, h - borderWidth, radius);
+      ctx.save();
+      ctx.clip();
+      ctx.drawImage(img, 0, 0, w, h);
+      ctx.restore();
+      strokeBorder();
+      triggerDownload();
+    };
+    img.onerror = () => { strokeBorder(); triggerDownload(); };
+    img.src = bgImageSrc;
+  } else {
+    if (shadow > 0) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = shadow;
+      ctx.shadowOffsetY = 8;
+    }
+    roundRectPath(ctx, borderWidth / 2, borderWidth / 2, w - borderWidth, h - borderWidth, radius);
+    ctx.fillStyle = `rgba(20,21,30,${glass})`;
+    ctx.fill();
+    if (shadow > 0) ctx.restore();
+    strokeBorder();
+    triggerDownload();
+  }
+}
+
+const btnDownloadCardTemplate = document.getElementById('btn-download-card-template');
+if (btnDownloadCardTemplate) {
+  btnDownloadCardTemplate.addEventListener('click', () => {
+    playSFX('click');
+    if (editingCardKey) downloadCardTemplate(editingCardKey);
   });
 }
 
@@ -2343,5 +2496,782 @@ if (btnClearCardStyle) {
       ['backgroundImage', 'backgroundColor', 'borderRadius', 'borderWidth', 'borderColor', 'borderStyle', 'boxShadow'].forEach(p => el.style[p] = '');
     }
     closeModal(modalCardEditor);
+  });
+}
+
+// ==========================================
+// MODO CONCLUIDOR (cadena de canciones + mezcla en secuencia, con recorte por pista)
+// ==========================================
+function songKeyOf(song) {
+  return song.id !== undefined ? ('id:' + song.id) : (song.title + '||' + song.artist);
+}
+
+let concludorChain = []; // [{ song, clipStart, clipDuration }]
+let concludorPlaying = false;
+let concludorPosition = 0;
+let concludorPreviewAudio = null;
+
+function findSongByKey(key) {
+  if (key.startsWith('id:')) {
+    const idVal = key.slice(3);
+    return songList.find(s => String(s.id) === idVal);
+  }
+  const [t, a] = key.split('||');
+  return songList.find(s => s.title === t && s.artist === a);
+}
+
+function loadConcludorChain() {
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem('concludorChain') || '[]'); } catch (e) { stored = []; }
+  concludorChain = stored.map(entry => {
+    const song = findSongByKey(entry.key);
+    if (!song) return null;
+    const clipStart = entry.clipStart || 0;
+    const clipEnd = entry.clipEnd !== undefined ? entry.clipEnd : clipStart + (entry.clipDuration || 20);
+    return {
+      song, clipStart, clipEnd, clipDuration: clipEnd - clipStart,
+      fadeAt: entry.fadeAt !== undefined ? entry.fadeAt : clipEnd,
+      fadeOutDuration: entry.fadeOutDuration !== undefined ? entry.fadeOutDuration : 2
+    };
+  }).filter(Boolean);
+}
+function saveConcludorChain() {
+  localStorage.setItem('concludorChain', JSON.stringify(concludorChain.map(e => ({
+    key: songKeyOf(e.song), clipStart: e.clipStart, clipEnd: e.clipEnd,
+    fadeAt: e.fadeAt, fadeOutDuration: e.fadeOutDuration
+  }))));
+}
+
+function formatTime(t) {
+  if (!t || isNaN(t)) return '0:00';
+  return Math.floor(t / 60) + ':' + ('0' + Math.floor(t % 60)).slice(-2);
+}
+
+function renderConcludorCarousel() {
+  const carousel = document.getElementById('concludor-carousel');
+  const cable = document.getElementById('concludor-cable');
+  if (!carousel) return;
+  if (concludorChain.length === 0) {
+    carousel.innerHTML = '<p class="empty-msg">Toca "Elegir Música" para armar tu cadena de canciones.</p>';
+    if (cable) cable.style.display = 'none';
+    return;
+  }
+  if (cable) cable.style.display = 'block';
+  carousel.innerHTML = concludorChain.map((entry, i) => `
+    <div class="concludor-card" data-idx="${i}">
+      <button class="concludor-remove" data-idx="${i}" title="Quitar">✕</button>
+      <img src="${entry.song.cover}" alt="Portada">
+      <div class="concludor-card-title">${entry.song.title}</div>
+      <div class="concludor-card-artist">${entry.song.artist}${entry.clipDuration ? ' · ' + entry.clipDuration + 's' : ''}</div>
+      <div class="concludor-card-controls">
+        <button class="concludor-move-up" data-idx="${i}" title="Mover antes" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="concludor-move-down" data-idx="${i}" title="Mover después" ${i === concludorChain.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="concludor-edit-clip" data-idx="${i}" title="Editar recorte y conexión">✏️</button>
+      </div>
+    </div>
+  `).join('');
+  carousel.querySelectorAll('.concludor-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playSFX('click');
+      const idx = parseInt(e.currentTarget.dataset.idx, 10);
+      concludorChain.splice(idx, 1);
+      saveConcludorChain();
+      renderConcludorCarousel();
+    });
+  });
+  carousel.querySelectorAll('.concludor-move-up').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playSFX('click');
+      const idx = parseInt(e.currentTarget.dataset.idx, 10);
+      if (idx > 0) {
+        [concludorChain[idx - 1], concludorChain[idx]] = [concludorChain[idx], concludorChain[idx - 1]];
+        saveConcludorChain();
+        renderConcludorCarousel();
+      }
+    });
+  });
+  carousel.querySelectorAll('.concludor-move-down').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playSFX('click');
+      const idx = parseInt(e.currentTarget.dataset.idx, 10);
+      if (idx < concludorChain.length - 1) {
+        [concludorChain[idx + 1], concludorChain[idx]] = [concludorChain[idx], concludorChain[idx + 1]];
+        saveConcludorChain();
+        renderConcludorCarousel();
+      }
+    });
+  });
+  carousel.querySelectorAll('.concludor-edit-clip').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playSFX('click');
+      const idx = parseInt(e.currentTarget.dataset.idx, 10);
+      const entry = concludorChain[idx];
+      renderConcludorAddList();
+      openModal(document.getElementById('modal-concludor-add'));
+      openConcludorTrimView(entry.song, entry, idx);
+    });
+  });
+}
+
+function renderConcludorAddList(filterText) {
+  const list = document.getElementById('concludor-add-list');
+  const trimView = document.getElementById('concludor-trim-view');
+  if (!list) return;
+  list.classList.remove('hidden');
+  if (trimView) trimView.classList.add('hidden');
+  if (songList.length === 0) {
+    list.innerHTML = '<li class="empty-msg">No tienes canciones cargadas todavía.</li>';
+    return;
+  }
+  const term = (filterText || '').trim().toLowerCase();
+  const visibleSongs = songList
+    .map((song, i) => ({ song, i }))
+    .filter(({ song }) => !term || song.title.toLowerCase().includes(term) || song.artist.toLowerCase().includes(term));
+
+  if (visibleSongs.length === 0) {
+    list.innerHTML = '<li class="empty-msg">Sin resultados para esa búsqueda.</li>';
+    return;
+  }
+  list.innerHTML = visibleSongs.map(({ song, i }) => `<li class="playlist-item" data-idx="${i}" style="cursor:pointer;">
+      <img src="${song.cover}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;">
+      <div style="flex:1;overflow:hidden;">
+        <div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${song.title}</div>
+        <div style="font-size:0.73rem;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${song.artist}</div>
+      </div>
+      <button class="menu-opt-btn concludor-choose-one" data-idx="${i}" style="width:auto;padding:8px 14px;font-size:0.75rem;flex-shrink:0;">Elegir</button>
+    </li>`).join('');
+  list.querySelectorAll('.concludor-choose-one').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      playSFX('click');
+      const idx = parseInt(e.currentTarget.dataset.idx, 10);
+      openConcludorTrimView(songList[idx]);
+    });
+  });
+}
+
+const concludorSearchInput = document.getElementById('concludor-search');
+if (concludorSearchInput) {
+  concludorSearchInput.addEventListener('input', (e) => renderConcludorAddList(e.target.value));
+}
+
+let trimTargetSong = null;
+let trimEditingIndex = null; // si no es null, estamos EDITANDO esa entrada de la cadena, no agregando una nueva
+let trimClipStart = 0;
+let trimClipEnd = 20;
+let trimFadeAt = 20; // segundo (relativo a 0, igual que start/end) donde se conecta con la siguiente canción
+let trimDuration = 180;
+let trimAudioBuffer = null;
+
+function redrawTrimWaveform() {
+  const canvas = document.getElementById('concludor-trim-waveform');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  if (trimAudioBuffer) {
+    const data = trimAudioBuffer.getChannelData(0);
+    const step = Math.ceil(data.length / w);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    for (let x = 0; x < w; x++) {
+      let min = 1.0, max = -1.0;
+      const base = x * step;
+      for (let j = 0; j < step; j += 4) {
+        const idx = base + j;
+        if (idx >= data.length) break;
+        const v = data[idx];
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      const y1 = (1 + min) * h / 2;
+      const y2 = (1 + max) * h / 2;
+      ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+    }
+  }
+
+  const startX = (trimClipStart / trimDuration) * w;
+  const endX = (trimClipEnd / trimDuration) * w;
+  const fadeX = (trimFadeAt / trimDuration) * w;
+
+  // Región seleccionada (el fragmento que se va a usar), resaltada en amarillo neón
+  ctx.fillStyle = 'rgba(255, 229, 0, 0.22)';
+  ctx.fillRect(startX, 0, endX - startX, h);
+  ctx.fillStyle = '#FFE500';
+  ctx.fillRect(startX - 1, 0, 3, h);
+  ctx.fillRect(endX - 1, 0, 3, h);
+
+  // Línea blanca: el segundo exacto de conexión con la siguiente canción
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = 6;
+  ctx.fillRect(fadeX - 1, 0, 3, h);
+  ctx.shadowBlur = 0;
+}
+
+function updateTrimTimeLabels() {
+  const startVal = document.getElementById('concludor-trim-start-value');
+  const endVal = document.getElementById('concludor-trim-end-value');
+  const fadeVal = document.getElementById('concludor-trim-fade-value');
+  if (startVal) startVal.textContent = formatTime(trimClipStart);
+  if (endVal) endVal.textContent = formatTime(trimClipEnd);
+  if (fadeVal) fadeVal.textContent = formatTime(trimFadeAt);
+}
+
+// Arrastre: detecta cuál de los 3 controles (inicio, fin, conexión) está más cerca del punto tocado
+let trimDragMode = null;
+function pickTrimHandle(canvas, clientX) {
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const startX = (trimClipStart / trimDuration) * rect.width;
+  const endX = (trimClipEnd / trimDuration) * rect.width;
+  const fadeX = (trimFadeAt / trimDuration) * rect.width;
+  const distances = [
+    { mode: 'fade', d: Math.abs(x - fadeX) },
+    { mode: 'start', d: Math.abs(x - startX) },
+    { mode: 'end', d: Math.abs(x - endX) }
+  ].sort((a, b) => a.d - b.d);
+  return distances[0].mode;
+}
+function dragTrimHandle(canvas, clientX) {
+  const rect = canvas.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  const t = Math.round(ratio * trimDuration * 10) / 10;
+  if (trimDragMode === 'start') {
+    trimClipStart = Math.min(t, trimClipEnd - 1);
+    if (trimFadeAt < trimClipStart) trimFadeAt = trimClipStart;
+  } else if (trimDragMode === 'end') {
+    trimClipEnd = Math.max(t, trimClipStart + 1);
+    if (trimFadeAt > trimClipEnd) trimFadeAt = trimClipEnd;
+  } else if (trimDragMode === 'fade') {
+    trimFadeAt = Math.max(trimClipStart, Math.min(t, trimClipEnd));
+  }
+  updateTrimTimeLabels();
+  redrawTrimWaveform();
+}
+
+function openConcludorTrimView(song, existingEntry, existingIndex) {
+  trimTargetSong = song;
+  trimEditingIndex = existingIndex !== undefined ? existingIndex : null;
+  trimClipStart = existingEntry ? existingEntry.clipStart : 0;
+  trimClipEnd = existingEntry ? existingEntry.clipEnd : 20;
+  trimFadeAt = existingEntry && existingEntry.fadeAt !== undefined ? existingEntry.fadeAt : trimClipEnd;
+  trimAudioBuffer = null;
+  const list = document.getElementById('concludor-add-list');
+  const trimView = document.getElementById('concludor-trim-view');
+  const trimCover = document.getElementById('concludor-trim-cover');
+  const trimTitle = document.getElementById('concludor-trim-title');
+  const trimArtist = document.getElementById('concludor-trim-artist');
+  const fadeoutInput = document.getElementById('concludor-trim-fadeout');
+  const fadeoutVal = document.getElementById('concludor-trim-fadeout-value');
+  const confirmBtn = document.getElementById('btn-concludor-confirm-add');
+  if (!trimView) return;
+
+  if (trimCover) trimCover.src = song.cover;
+  if (trimTitle) trimTitle.textContent = song.title;
+  if (trimArtist) trimArtist.textContent = song.artist;
+  const fadeOutValue = existingEntry ? (existingEntry.fadeOutDuration || 2) : 2;
+  if (fadeoutInput) fadeoutInput.value = fadeOutValue;
+  if (fadeoutVal) fadeoutVal.textContent = fadeOutValue.toFixed(1) + 's';
+  if (confirmBtn) confirmBtn.textContent = existingEntry ? 'Guardar Cambios' : 'Agregar a la Cadena';
+  updateTrimTimeLabels();
+
+  if (list) list.classList.add('hidden');
+  trimView.classList.remove('hidden');
+
+  // Decodificamos el audio real para dibujar su forma de onda de verdad (no es decorativo)
+  initAudioContext();
+  fetch(song.url)
+    .then(res => res.arrayBuffer())
+    .then(buf => audioCtx.decodeAudioData(buf))
+    .then(audioBuffer => {
+      trimAudioBuffer = audioBuffer;
+      trimDuration = audioBuffer.duration || 180;
+      if (!existingEntry) { trimClipEnd = Math.min(20, trimDuration); trimFadeAt = trimClipEnd; updateTrimTimeLabels(); }
+      redrawTrimWaveform();
+    })
+    .catch(() => { trimDuration = 180; redrawTrimWaveform(); });
+}
+
+const concludorTrimFadeoutInput = document.getElementById('concludor-trim-fadeout');
+if (concludorTrimFadeoutInput) {
+  concludorTrimFadeoutInput.addEventListener('input', (e) => {
+    const el = document.getElementById('concludor-trim-fadeout-value');
+    if (el) el.textContent = parseFloat(e.target.value).toFixed(1) + 's';
+  });
+}
+
+const concludorTrimCanvas = document.getElementById('concludor-trim-waveform');
+if (concludorTrimCanvas) {
+  concludorTrimCanvas.addEventListener('mousedown', (e) => { trimDragMode = pickTrimHandle(concludorTrimCanvas, e.clientX); dragTrimHandle(concludorTrimCanvas, e.clientX); });
+  window.addEventListener('mousemove', (e) => { if (trimDragMode) dragTrimHandle(concludorTrimCanvas, e.clientX); });
+  window.addEventListener('mouseup', () => { trimDragMode = null; });
+  concludorTrimCanvas.addEventListener('touchstart', (e) => { trimDragMode = pickTrimHandle(concludorTrimCanvas, e.touches[0].clientX); dragTrimHandle(concludorTrimCanvas, e.touches[0].clientX); }, { passive: true });
+  window.addEventListener('touchmove', (e) => { if (trimDragMode) dragTrimHandle(concludorTrimCanvas, e.touches[0].clientX); }, { passive: true });
+  window.addEventListener('touchend', () => { trimDragMode = null; });
+}
+
+const btnConcludorPreview = document.getElementById('btn-concludor-preview');
+if (btnConcludorPreview) {
+  btnConcludorPreview.addEventListener('click', () => {
+    playSFX('click');
+    if (!trimTargetSong) return;
+    if (concludorPreviewAudio) { concludorPreviewAudio.pause(); concludorPreviewAudio = null; }
+    concludorPreviewAudio = new Audio(trimTargetSong.url);
+    const startAt = trimClipStart;
+    const dur = Math.max(0.5, trimClipEnd - trimClipStart);
+    const startPreview = () => {
+      if (!concludorPreviewAudio) return;
+      concludorPreviewAudio.currentTime = startAt;
+      concludorPreviewAudio.play().catch(() => {});
+      setTimeout(() => {
+        if (concludorPreviewAudio) { concludorPreviewAudio.pause(); concludorPreviewAudio = null; }
+      }, dur * 1000);
+    };
+    concludorPreviewAudio.addEventListener('loadedmetadata', startPreview, { once: true });
+  });
+}
+
+const btnConcludorBackList = document.getElementById('btn-concludor-back-list');
+if (btnConcludorBackList) {
+  btnConcludorBackList.addEventListener('click', () => {
+    playSFX('click');
+    if (concludorPreviewAudio) { concludorPreviewAudio.pause(); concludorPreviewAudio = null; }
+    if (concludorSearchInput) concludorSearchInput.value = '';
+    renderConcludorAddList();
+  });
+}
+
+const btnConcludorConfirmAdd = document.getElementById('btn-concludor-confirm-add');
+if (btnConcludorConfirmAdd) {
+  btnConcludorConfirmAdd.addEventListener('click', () => {
+    playSFX('click');
+    if (!trimTargetSong) return;
+    if (concludorPreviewAudio) { concludorPreviewAudio.pause(); concludorPreviewAudio = null; }
+    const fadeoutInput = document.getElementById('concludor-trim-fadeout');
+    const entry = {
+      song: trimTargetSong,
+      clipStart: trimClipStart,
+      clipEnd: trimClipEnd,
+      clipDuration: trimClipEnd - trimClipStart,
+      fadeAt: trimFadeAt,
+      fadeOutDuration: fadeoutInput ? parseFloat(fadeoutInput.value) : 2
+    };
+    const wasEditing = trimEditingIndex !== null;
+    if (trimEditingIndex !== null) concludorChain[trimEditingIndex] = entry;
+    else concludorChain.push(entry);
+    saveConcludorChain();
+    renderConcludorCarousel();
+    trimTargetSong = null;
+    trimEditingIndex = null;
+    closeModal(document.getElementById('modal-concludor-add'));
+    showToast(wasEditing ? 'Cambios guardados.' : 'Canción agregada a la cadena.', 'info', 2500);
+  });
+}
+
+// Dispara el crossfade real hacia la siguiente canción de la cadena, respetando el punto
+// de conexión y el fundido configurados en el editor (antes esto se ignoraba por completo).
+let concludorFadeTriggered = false;
+
+function triggerConcludorCrossfade() {
+  const nextIndex = concludorPosition + 1;
+  if (nextIndex >= concludorChain.length) return;
+  const nextEntry = concludorChain[nextIndex];
+  const realIndex = songList.indexOf(nextEntry.song);
+  if (realIndex < 0) { concludorPosition = nextIndex; triggerConcludorCrossfade(); return; }
+
+  const currentEntry = concludorChain[concludorPosition];
+  const fadeSeconds = Math.max(0.3, currentEntry.fadeOutDuration || 0.3);
+  const nextAudio = (activeAudio === audio1) ? audio2 : audio1;
+  const currentAudio = activeAudio;
+
+  initAudioContext();
+  nextAudio.src = nextEntry.song.url;
+  nextAudio.volume = 0;
+
+  // BUG arreglado: poner currentTime justo después de cambiar el src casi nunca funciona
+  // (el navegador todavía no sabe la duración real) y por eso siempre sonaba desde el inicio.
+  // Ahora esperamos a "loadedmetadata" antes de buscar el segundo exacto y recién ahí reproducir.
+  const startCrossfadePlayback = () => {
+    nextAudio.currentTime = nextEntry.clipStart || 0;
+    const playPromise = nextAudio.play();
+    if (playPromise === undefined) return;
+    playPromise.then(() => {
+      const tickMs = 60;
+      const steps = Math.max(1, (fadeSeconds * 1000) / tickMs);
+      const step = 1 / steps;
+      const targetVol = volumeSlider ? parseFloat(volumeSlider.value) : 1;
+
+      const fade = setInterval(() => {
+        if (currentAudio.volume > step) currentAudio.volume -= step;
+        else { currentAudio.volume = 0; currentAudio.pause(); }
+        if (nextAudio.volume < targetVol - step) nextAudio.volume += step;
+        else { nextAudio.volume = targetVol; clearInterval(fade); }
+      }, tickMs);
+
+      activeAudio = nextAudio;
+      concludorPosition = nextIndex;
+      concludorFadeTriggered = false;
+
+      // Actualizamos toda la pantalla (sin volver a llamar loadSong, eso reiniciaría el
+      // audio y cortaría el crossfade que recién empezamos)
+      currentIndex = realIndex;
+      const song = nextEntry.song;
+      if (title) title.textContent = song.title;
+      if (artist) artist.textContent = song.artist;
+      if (cover) cover.src = song.cover;
+      if (playerBgFluid) playerBgFluid.style.backgroundImage = `url(${song.cover})`;
+      if (lyricsBg) lyricsBg.style.backgroundImage = `url(${song.cover})`;
+      if (cinemaCover) cinemaCover.src = song.cover;
+      if (cinemaTitle) cinemaTitle.textContent = song.title;
+      if (cinemaArtist) cinemaArtist.textContent = song.artist;
+      if (cinemaBg) cinemaBg.style.backgroundImage = `url(${song.cover})`;
+      applyLyricsCalibration(song);
+      displayLyrics(song.lyrics);
+      updateMediaSession(song);
+      syncMiniPlayer(true);
+      syncVehicleMode();
+  syncMobileNowPlaying();
+      renderPlaylist();
+      renderConcludorCarousel();
+    }).catch(err => console.error('Error en crossfade del Concluidor:', err));
+  };
+
+  if (nextAudio.readyState >= 1) startCrossfadePlayback();
+  else nextAudio.addEventListener('loadedmetadata', startCrossfadePlayback, { once: true });
+}
+
+function playConcludorEntry(entry) {
+  const realIndex = songList.indexOf(entry.song);
+  if (realIndex < 0) { advanceConcludorChain(); return; }
+
+  // Igual que en el crossfade: poner currentTime justo después de cambiar el src no funciona
+  // de forma confiable (el navegador todavía no conoce la duración real), así que esperamos
+  // a "loadedmetadata" antes de buscar el segundo exacto. Esto es lo que causaba que
+  // siempre sonara desde el inicio en vez del fragmento elegido.
+  initAudioContext();
+  audio1.pause();
+  audio2.pause();
+  activeAudio = audio1;
+  currentIndex = realIndex;
+  activeAudio.src = entry.song.url;
+  activeAudio.volume = volumeSlider ? parseFloat(volumeSlider.value) : 1;
+
+  const startPlayback = () => {
+    activeAudio.currentTime = entry.clipStart || 0;
+    activeAudio.play().catch(err => console.error('Error al reproducir en Concluidor:', err));
+  };
+  if (activeAudio.readyState >= 1) startPlayback();
+  else activeAudio.addEventListener('loadedmetadata', startPlayback, { once: true });
+
+  const song = entry.song;
+  if (title) title.textContent = song.title;
+  if (artist) artist.textContent = song.artist;
+  if (cover) cover.src = song.cover;
+  if (playerBgFluid) playerBgFluid.style.backgroundImage = `url(${song.cover})`;
+  if (lyricsBg) lyricsBg.style.backgroundImage = `url(${song.cover})`;
+  if (cinemaCover) cinemaCover.src = song.cover;
+  if (cinemaTitle) cinemaTitle.textContent = song.title;
+  if (cinemaArtist) cinemaArtist.textContent = song.artist;
+  if (cinemaBg) cinemaBg.style.backgroundImage = `url(${song.cover})`;
+  applyLyricsCalibration(song);
+  displayLyrics(song.lyrics);
+  updateMediaSession(song);
+  syncMiniPlayer(true);
+  syncVehicleMode();
+  syncMobileNowPlaying();
+  renderPlaylist();
+  renderConcludorCarousel();
+
+  concludorFadeTriggered = false;
+}
+
+function advanceConcludorChain() {
+  concludorPosition++;
+  if (concludorPosition < concludorChain.length) {
+    playConcludorEntry(concludorChain[concludorPosition]);
+  } else {
+    concludorPlaying = false;
+    const playBtn = document.getElementById('btn-concludor-play');
+    if (playBtn) playBtn.textContent = '▶ REPRODUCIR MEZCLA COMPLETA';
+    showToast('Mezcla completa terminada.', 'info');
+  }
+}
+
+// Visualizador de frecuencias con audio real (no decorativo)
+let concludorBars = [];
+let concludorRafId = null;
+function setupConcludorVisualizer() {
+  const viz = document.getElementById('concludor-eq-viz');
+  if (!viz || concludorBars.length > 0) return;
+  viz.innerHTML = '';
+  for (let i = 0; i < 32; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'concludor-eq-bar';
+    bar.style.animation = 'none';
+    bar.style.height = '15%';
+    viz.appendChild(bar);
+    concludorBars.push(bar);
+  }
+}
+function drawConcludorVisualizer() {
+  const concludorModeEl = document.getElementById('concludor-mode');
+  if (!concludorModeEl || !concludorModeEl.classList.contains('active')) { concludorRafId = null; return; }
+  if (concludorAnalyser && concludorBars.length > 0) {
+    const data = new Uint8Array(concludorAnalyser.frequencyBinCount);
+    concludorAnalyser.getByteFrequencyData(data);
+    const step = Math.max(1, Math.floor(data.length / concludorBars.length));
+    concludorBars.forEach((bar, i) => {
+      const val = data[i * step] || 0;
+      bar.style.height = Math.max(6, (val / 255) * 60) + 'px';
+    });
+  }
+  concludorRafId = requestAnimationFrame(drawConcludorVisualizer);
+}
+
+const btnConcludorMode = document.getElementById('btn-concludor-mode');
+const concludorMode = document.getElementById('concludor-mode');
+const btnConcludorFinish = document.getElementById('btn-concludor-finish');
+const btnConcludorClose = document.getElementById('btn-concludor-close');
+const btnConcludorAdd = document.getElementById('btn-concludor-add');
+const modalConcludorAdd = document.getElementById('modal-concludor-add');
+const btnCloseConcludorAdd = document.getElementById('btn-close-concludor-add');
+const btnConcludorPlay = document.getElementById('btn-concludor-play');
+const btnConcludorVoice = document.getElementById('btn-concludor-voice');
+const btnConcludorMusic = document.getElementById('btn-concludor-music');
+
+if (btnConcludorMode) {
+  btnConcludorMode.addEventListener('click', () => {
+    playSFX('open');
+    loadConcludorChain();
+    renderConcludorCarousel();
+    setupConcludorVisualizer();
+    if (concludorMode) concludorMode.classList.add('active');
+    if (!concludorRafId) drawConcludorVisualizer();
+  });
+}
+if (btnConcludorFinish) {
+  btnConcludorFinish.addEventListener('click', () => {
+    playSFX('close');
+    saveConcludorChain();
+    if (concludorMode) concludorMode.classList.remove('active');
+  });
+}
+if (btnConcludorClose) {
+  btnConcludorClose.addEventListener('click', () => {
+    playSFX('close');
+    if (concludorMode) concludorMode.classList.remove('active');
+  });
+}
+if (btnConcludorAdd) {
+  btnConcludorAdd.addEventListener('click', () => {
+    playSFX('click');
+    if (concludorSearchInput) concludorSearchInput.value = '';
+    renderConcludorAddList();
+    openModal(modalConcludorAdd);
+  });
+}
+if (btnCloseConcludorAdd) {
+  btnCloseConcludorAdd.addEventListener('click', () => {
+    playSFX('close');
+    if (concludorPreviewAudio) { concludorPreviewAudio.pause(); concludorPreviewAudio = null; }
+    closeModal(modalConcludorAdd);
+  });
+}
+
+if (btnConcludorPlay) {
+  btnConcludorPlay.addEventListener('click', () => {
+    playSFX('click');
+    if (concludorPlaying) {
+      // Ya está sonando la mezcla: este toque solo pausa/reanuda, no reinicia desde el principio
+      if (activeAudio.paused) {
+        activeAudio.play().catch(() => {});
+        btnConcludorPlay.textContent = '⏸ PAUSAR MEZCLA';
+      } else {
+        activeAudio.pause();
+        btnConcludorPlay.textContent = '▶ CONTINUAR MEZCLA';
+      }
+      return;
+    }
+    if (concludorChain.length === 0) { showToast('Agrega al menos una canción a la cadena primero.', 'error'); return; }
+    concludorPlaying = true;
+    concludorPosition = 0;
+    playConcludorEntry(concludorChain[0]);
+    btnConcludorPlay.textContent = '⏸ PAUSAR MEZCLA';
+  });
+}
+
+// "Voz" / "Música" reutilizan el mismo motor de Separación de Voz/Música ya construido
+if (btnConcludorVoice) {
+  btnConcludorVoice.addEventListener('click', () => {
+    playSFX('click');
+    initAudioContext();
+    btnConcludorVoice.classList.add('active');
+    btnConcludorMusic.classList.remove('active');
+    if (toggleVmEnabled) toggleVmEnabled.checked = true;
+    if (midGain) midGain.gain.value = 1.6;
+    if (sideGain) sideGain.gain.value = 0.5;
+  });
+}
+if (btnConcludorMusic) {
+  btnConcludorMusic.addEventListener('click', () => {
+    playSFX('click');
+    initAudioContext();
+    btnConcludorMusic.classList.add('active');
+    btnConcludorVoice.classList.remove('active');
+    if (toggleVmEnabled) toggleVmEnabled.checked = true;
+    if (midGain) midGain.gain.value = 0.5;
+    if (sideGain) sideGain.gain.value = 1.6;
+  });
+}
+
+// Dispara la transición en el punto de conexión exacto que se eligió en el editor,
+// con el fundido configurado (antes esto se ignoraba y cortaba de golpe siempre).
+setInterval(() => {
+  if (!concludorPlaying) return;
+  const entry = concludorChain[concludorPosition];
+  if (!entry) return;
+  const fadeAt = entry.fadeAt !== undefined ? entry.fadeAt : entry.clipEnd;
+  const fadeOutDuration = entry.fadeOutDuration || 0;
+  const triggerPoint = Math.max(entry.clipStart || 0, fadeAt - fadeOutDuration);
+
+  if (!concludorFadeTriggered && activeAudio.currentTime >= triggerPoint) {
+    concludorFadeTriggered = true;
+    if (concludorPosition + 1 < concludorChain.length) {
+      triggerConcludorCrossfade();
+    }
+  }
+  if (concludorPosition === concludorChain.length - 1 && activeAudio.currentTime >= fadeAt) {
+    concludorPlaying = false;
+    const playBtn = document.getElementById('btn-concludor-play');
+    if (playBtn) playBtn.textContent = '▶ REPRODUCIR MEZCLA COMPLETA';
+    showToast('Mezcla completa terminada.', 'info');
+  }
+}, 300);
+
+// ==========================================
+// BUSCADOR DE BIBLIOTECA
+// ==========================================
+const librarySearchInput = document.getElementById('library-search');
+if (librarySearchInput) {
+  librarySearchInput.addEventListener('input', (e) => {
+    const term = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('#playlist > li').forEach(item => {
+      const match = !term || item.textContent.toLowerCase().includes(term);
+      item.style.display = match ? '' : 'none';
+    });
+  });
+}
+
+// ==========================================
+// MODO INTERFAZ CELULAR (diseño tipo app de celular, con barra inferior)
+// ==========================================
+const toggleMobileLayout = document.getElementById('toggle-mobile-layout');
+const mobileNowplayingBar = document.getElementById('mobile-nowplaying-bar');
+const mobileTabBar = document.getElementById('mobile-tab-bar');
+
+function applyMobileLayoutState(enabled) {
+  document.body.classList.toggle('mobile-layout', enabled);
+  if (!enabled) document.body.classList.remove('mobile-player-expanded');
+}
+
+if (toggleMobileLayout) {
+  const savedMobileLayout = localStorage.getItem('mobileLayoutEnabled') === 'true';
+  toggleMobileLayout.checked = savedMobileLayout;
+  applyMobileLayoutState(savedMobileLayout);
+  toggleMobileLayout.addEventListener('change', (e) => {
+    playSFX('click');
+    localStorage.setItem('mobileLayoutEnabled', e.target.checked ? 'true' : 'false');
+    applyMobileLayoutState(e.target.checked);
+  });
+}
+
+function syncMobileNowPlaying() {
+  const mnpCover = document.getElementById('mobile-np-cover');
+  const mnpTitle = document.getElementById('mobile-np-title');
+  const mnpArtist = document.getElementById('mobile-np-artist');
+  const mnpPlayIcon = document.getElementById('mobile-np-play-icon');
+  if (mnpCover && cover) mnpCover.src = cover.src;
+  if (mnpTitle && title) mnpTitle.textContent = title.textContent;
+  if (mnpArtist && artist) mnpArtist.textContent = artist.textContent;
+  if (mnpPlayIcon && playIcon) mnpPlayIcon.innerHTML = playIcon.innerHTML;
+}
+
+if (mobileNowplayingBar) {
+  mobileNowplayingBar.addEventListener('click', (e) => {
+    if (e.target.closest('#mobile-np-play')) return; // el botón de play/pausa se maneja aparte
+    playSFX('click');
+    if (playerCard) playerCard.classList.toggle('mobile-expanded');
+    document.body.classList.toggle('mobile-player-expanded');
+  });
+}
+const mobileNpPlayBtn = document.getElementById('mobile-np-play');
+if (mobileNpPlayBtn) mobileNpPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); if (playBtn) playBtn.click(); });
+
+if (mobileTabBar) {
+  mobileTabBar.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      playSFX('click');
+      mobileTabBar.querySelectorAll('.mobile-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      if (playerCard) playerCard.classList.remove('mobile-expanded');
+      document.body.classList.remove('mobile-player-expanded');
+      if (tab === 'ajustes') {
+        if (btnMainMenu) btnMainMenu.click();
+      } else if (tab === 'buscar') {
+        if (librarySearchInput) setTimeout(() => librarySearchInput.focus(), 100);
+      }
+    });
+  });
+}
+
+// ==========================================
+// MENÚ "MÁS DINÁMICO" (Enfoque / Vehículo / Concluidor / Cine / Pantalla Completa / Mini Reproductor)
+// Antes estos vivían solo en la barra superior, que se oculta por completo en modo celular.
+// Ahora también quedan accesibles desde este menú, dentro del propio reproductor.
+// ==========================================
+const btnModesMenu = document.getElementById('btn-modes-menu');
+const modesMenu = document.getElementById('modes-menu');
+
+if (btnModesMenu && modesMenu) {
+  btnModesMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    playSFX('click');
+    modesMenu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!modesMenu.classList.contains('hidden') && !modesMenu.contains(e.target) && e.target !== btnModesMenu) {
+      modesMenu.classList.add('hidden');
+    }
+  });
+}
+
+function wireModesMenuItem(itemId, targetBtn) {
+  const item = document.getElementById(itemId);
+  if (item && targetBtn) {
+    item.addEventListener('click', () => {
+      modesMenu.classList.add('hidden');
+      targetBtn.click();
+    });
+  }
+}
+wireModesMenuItem('modes-menu-focus', btnFocusMode);
+wireModesMenuItem('modes-menu-vehicle', btnVehicleMode);
+wireModesMenuItem('modes-menu-concludor', btnConcludorMode);
+wireModesMenuItem('modes-menu-cinema', btnCinemaMode);
+wireModesMenuItem('modes-menu-fullscreen', btnFullscreen);
+wireModesMenuItem('modes-menu-mini', btnMiniPlayer);
+
+// Botón X para cerrar el reproductor expandido en celular
+const btnCloseMobilePlayer = document.getElementById('btn-close-mobile-player');
+if (btnCloseMobilePlayer) {
+  btnCloseMobilePlayer.addEventListener('click', () => {
+    playSFX('close');
+    if (playerCard) playerCard.classList.remove('mobile-expanded');
+    document.body.classList.remove('mobile-player-expanded');
   });
 }
