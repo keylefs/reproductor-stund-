@@ -1780,3 +1780,248 @@ body.no-animations, body.no-animations * { transition: none !important; animatio
 .card-fit-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; padding: 8px 10px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
 .card-fit-btn.active { background: var(--primary-color); color: #12131c; font-weight: 700; }
 #input-card-border-color { width: 100%; height: 34px; border-radius: 8px; border: 1px solid var(--card-border); background: none; cursor: pointer; }
+
+/* ============================================
+   MODO VERTICAL / CELULAR (faltaba casi por completo)
+   ============================================ */
+@media (max-width: 480px) {
+  body { padding: 12px; padding-top: 70px; }
+
+  .player-card, .library-panel, .eq-panel, .vm-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 420px;
+  }
+
+  .top-left-global-bar { top: 12px; left: 12px; }
+  .top-global-bar { top: 12px; right: 12px; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 90px); }
+  .top-global-bar .global-icon-btn { width: 34px; height: 34px; }
+  #btn-mini-player { opacity: 0.45; }
+
+  .library-panel { height: auto; max-height: 60vh; }
+
+  .cinema-cover-art { width: 140px; height: 140px; }
+  .vehicle-cover-art { width: 60vw; height: 60vw; }
+}
+
+/* Mensaje de que el mini reproductor no está disponible en celular (en vez de fallar solo) */
+.mp-mobile-notice {
+  position: fixed; bottom: 90px; left: 16px; right: 16px; z-index: 700;
+  background: rgba(18, 19, 28, 0.95); border: 1px solid var(--card-border);
+  border-radius: 12px; padding: 14px 16px; font-size: 0.85rem; line-height: 1.4;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0; transform: translateY(10px); pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.mp-mobile-notice.active { opacity: 1; transform: translateY(0); }
+
+/* Mensajes de alerta/error estilo "toast", abajo a la izquierda (en vez del alert() feo del navegador) */
+#toast-container {
+  position: fixed; left: 16px; bottom: 16px; z-index: 9999;
+  display: flex; flex-direction: column-reverse; gap: 8px;
+  pointer-events: none; max-width: min(340px, calc(100vw - 32px));
+}
+.app-toast {
+  background: rgba(18, 19, 28, 0.95); border: 1px solid var(--card-border);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; line-height: 1.4;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0; transform: translateX(-16px); transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.app-toast.active { opacity: 1; transform: translateX(0); }
+.app-toast.toast-error { border-left-color: #ff6b6b; }
+
+/* ============================================
+   MODO CONCLUIDOR (estudio de mezcla en cadena)
+   ============================================ */
+.concludor-mode {
+  position: fixed; inset: 0; z-index: 350; background: #080808;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out;
+  padding: 20px;
+}
+.concludor-mode.active { opacity: 1; pointer-events: auto; }
+#modal-concludor-add { z-index: 360; }
+
+.concludor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.concludor-header h2 { font-size: 1.1rem; font-weight: 700; margin: 0; color: #fff; }
+.concludor-header h2 span { color: #FFE500; font-weight: 500; }
+.concludor-finish-btn {
+  background: rgba(255, 229, 0, 0.08); border: 1px solid #FFE500; color: #FFE500;
+  padding: 8px 22px; border-radius: 20px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 0 14px rgba(255, 229, 0, 0.35);
+}
+.concludor-finish-btn:hover { background: rgba(255, 229, 0, 0.18); }
+
+.concludor-carousel-wrapper { position: relative; padding: 30px 10px; }
+.concludor-cable {
+  position: absolute; left: 20px; right: 20px; top: 50%; height: 3px;
+  background: linear-gradient(90deg, #FFE500, #fff8b0, #FFE500);
+  box-shadow: 0 0 12px 2px rgba(255, 229, 0, 0.8);
+  transform: translateY(-50%); z-index: 0;
+}
+.concludor-carousel {
+  position: relative; z-index: 1; display: flex; gap: 22px; overflow-x: auto;
+  padding: 10px 4px 16px 4px; scrollbar-width: thin;
+}
+.concludor-card {
+  position: relative; flex-shrink: 0; width: 130px; text-align: center;
+  background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 229, 0, 0.25); border-radius: 14px; padding: 10px;
+}
+.concludor-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 10px; display: block; }
+.concludor-card-controls { display: flex; justify-content: center; gap: 4px; margin-top: 6px; }
+.concludor-card-controls button {
+  width: 20px; height: 20px; border-radius: 5px; background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 0.65rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.concludor-card-controls button.fade-active { background: rgba(255, 229, 0, 0.25); border-color: #FFE500; color: #FFE500; }
+.concludor-card .concludor-remove {
+  position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; z-index: 2;
+}
+.concludor-card .concludor-card-title { font-size: 0.78rem; font-weight: 700; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.concludor-card .concludor-card-artist { font-size: 0.68rem; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.concludor-eq-viz { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 3px; min-height: 60px; padding: 0 20px 10px 20px; }
+.concludor-eq-bar { width: 5px; background: linear-gradient(to top, #FFE500, #fff8b0); border-radius: 3px; animation: concludorBar 1s ease-in-out infinite; }
+@keyframes concludorBar { 0%, 100% { height: 15%; } 50% { height: 90%; } }
+
+.concludor-bottom-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.concludor-src-btn {
+  display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border); color: #fff; padding: 10px 16px; border-radius: 24px;
+  font-size: 0.8rem; cursor: pointer;
+}
+.concludor-src-btn.active { background: rgba(255, 229, 0, 0.15); border-color: #FFE500; color: #FFE500; }
+.concludor-play-btn {
+  margin-left: auto; background: rgba(255, 229, 0, 0.1); border: 1px solid #FFE500; color: #FFE500;
+  padding: 12px 22px; border-radius: 24px; font-weight: 700; font-size: 0.82rem; cursor: pointer;
+  box-shadow: 0 0 14px rgba(255, 229, 0, 0.35);
+}
+.concludor-play-btn:hover { background: rgba(255, 229, 0, 0.22); }
+
+@media (max-width: 600px) {
+  .concludor-bottom-bar { flex-direction: column; align-items: stretch; }
+  .concludor-play-btn { margin-left: 0; }
+}
+
+#modal-concludor-add .modal-window { width: 460px; max-height: 85vh; overflow-y: auto; }
+#concludor-add-list {
+  max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  padding-right: 4px;
+}
+#concludor-add-list .playlist-item {
+  padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent; transition: background 0.2s; gap: 12px;
+}
+#concludor-add-list .playlist-item:hover { background: rgba(255, 229, 0, 0.06); border-color: rgba(255, 229, 0, 0.2); }
+
+.concludor-header-actions { display: flex; align-items: center; gap: 10px; }
+.concludor-src-group { display: flex; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 24px; padding: 4px; }
+.concludor-src-group .concludor-src-btn { border: none; }
+
+.concludor-trim-view { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+.concludor-trim-view.hidden { display: none; }
+.concludor-trim-info { display: flex; align-items: center; gap: 12px; }
+.concludor-trim-info img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; }
+.concludor-trim-title { font-weight: 700; font-size: 0.9rem; }
+.concludor-trim-artist { font-size: 0.75rem; color: var(--text-sub); }
+.concludor-waveform { width: 100%; height: 80px; border-radius: 8px; background: rgba(0,0,0,0.35); cursor: pointer; display: block; }
+
+.concludor-trim-times { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-sub); margin: -4px 0 4px 0; flex-wrap: wrap; gap: 6px; }
+.concludor-trim-times b { color: #FFE500; font-weight: 700; }
+.concludor-waveform { cursor: ew-resize; touch-action: none; }
+
+.concludor-card-menu-btn {
+  position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; z-index: 2;
+}
+.concludor-card-options {
+  position: absolute; top: 30px; left: 4px; z-index: 5; background: rgba(15, 15, 15, 0.97);
+  border: 1px solid rgba(255, 229, 0, 0.3); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 3px;
+  min-width: 110px;
+}
+.concludor-card-options button {
+  background: none; border: none; color: #fff; text-align: left; padding: 6px 8px; font-size: 0.72rem;
+  border-radius: 6px; cursor: pointer;
+}
+.concludor-card-options button:hover { background: rgba(255, 229, 0, 0.15); }
+
+/* ============================================
+   MODO INTERFAZ CELULAR (app estilo Lark Player)
+   ============================================ */
+.mobile-nowplaying-bar, .mobile-tab-bar { display: none; }
+
+body.mobile-layout { padding-bottom: 130px; }
+body.mobile-layout .player-card { display: none; }
+body.mobile-layout .player-card.mobile-expanded {
+  display: block; position: fixed; inset: 0; z-index: 450; width: 100%; height: 100%;
+  border-radius: 0; overflow-y: auto; animation: mobileExpandIn 0.3s ease-out;
+}
+@keyframes mobileExpandIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+body.mobile-layout .library-panel { width: 100%; max-width: none; height: auto; }
+body.mobile-layout .top-left-global-bar,
+body.mobile-layout .top-global-bar,
+body.mobile-layout .floating-upload-btn { display: none; }
+
+body.mobile-layout .mobile-nowplaying-bar {
+  display: flex; align-items: center; gap: 10px;
+  position: fixed; left: 10px; right: 10px; bottom: 68px; z-index: 400;
+  background: rgba(18, 19, 28, 0.95); backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 12px;
+  cursor: pointer; overflow: hidden; transition: bottom 0.2s ease;
+}
+body.mobile-layout.mobile-player-expanded .mobile-nowplaying-bar { z-index: 460; bottom: 14px; }
+
+/* Letras, Modo Cine, Modo Vehículo y Modo Concluidor quedaban invisibles detrás del
+   reproductor expandido en celular (su z-index era más bajo). Los subimos por encima,
+   y en celular se abren como una "hoja" que sube desde abajo. */
+body.mobile-layout .lyrics-panel.active,
+body.mobile-layout .cinema-mode.active,
+body.mobile-layout .vehicle-mode.active,
+body.mobile-layout .concludor-mode.active {
+  z-index: 470;
+}
+body.mobile-layout .lyrics-panel.active {
+  position: fixed; inset: auto 0 0 0; height: 88vh; width: 100%;
+  border-radius: 20px 20px 0 0; animation: mobileExpandIn 0.3s ease-out;
+}
+.mobile-nowplaying-bar img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.mobile-np-info { flex: 1; overflow: hidden; }
+.mobile-np-title { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mobile-np-artist { font-size: 0.7rem; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mobile-np-progress { position: absolute; left: 0; bottom: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.1); }
+.mobile-np-progress-fill { height: 100%; width: 0%; background: var(--primary-color); }
+
+body.mobile-layout .mobile-tab-bar {
+  display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 400;
+  background: rgba(12, 13, 20, 0.97); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--card-border); padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+}
+.mobile-tab-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: none; border: none; color: var(--text-sub); font-size: 0.65rem; cursor: pointer; padding: 4px;
+}
+.mobile-tab-btn.active { color: var(--primary-color); }
+
+/* Botón X para cerrar el reproductor expandido en celular (oculto en escritorio) */
+.mobile-only-btn { display: none; margin-left: auto; }
+body.mobile-layout.mobile-player-expanded .mobile-only-btn { display: flex; }
+
+/* Fila de artista + menú de modos, y el propio menú desplegable */
+.song-info-row { display: flex; align-items: center; justify-content: center; gap: 8px; position: relative; }
+.song-info-row h3 { margin: 0; }
+.modes-menu {
+  position: absolute; top: calc(100% + 6px); right: 10px; z-index: 20;
+  background: rgba(18, 19, 28, 0.97); backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border); border-radius: 14px; padding: 8px;
+  display: flex; flex-direction: column; gap: 4px; width: 220px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.modes-menu.hidden { display: none; }
+.modes-menu .menu-opt-btn { text-align: left; padding: 9px 12px; font-size: 0.78rem; }
