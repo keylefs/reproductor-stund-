@@ -26,15 +26,43 @@ body.light-mode {
   --text-sub: #64748b;
 }
 
-/* Modo Rendimiento (Sin animaciones pesadas, sin blur y sin sombras) */
-body.performance-mode *,
-body.performance-mode *::before,
-body.performance-mode *::after {
+/* Optimizador Gráfico: nivel "Ahorro" (0) = el máximo ahorro posible */
+body.graphics-level-0 *,
+body.graphics-level-0 *::before,
+body.graphics-level-0 *::after {
   animation: none !important;
   transition: none !important;
   backdrop-filter: none !important;
   box-shadow: none !important;
 }
+body.graphics-level-0 .player-bg-fluid,
+body.graphics-level-0 .cinema-bg,
+body.graphics-level-0 #mini-bg-fluid,
+body.graphics-level-0 .player-visualizer,
+body.graphics-level-0 .concludor-eq-viz,
+body.graphics-level-0 #bg-video,
+body.graphics-level-0 #night-mode-overlay {
+  display: none !important;
+}
+
+/* Optimizador Gráfico: nivel "Equilibrado" (1) = un punto medio */
+body.graphics-level-1 .player-bg-fluid,
+body.graphics-level-1 .cinema-bg,
+body.graphics-level-1 #mini-bg-fluid {
+  animation: none !important;
+}
+body.graphics-level-1 .player-visualizer,
+body.graphics-level-1 .concludor-eq-viz {
+  display: none !important;
+}
+body.graphics-level-1 *,
+body.graphics-level-1 *::before,
+body.graphics-level-1 *::after {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.graphics-level-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-sub); margin-top: 4px; }
 
 * {
   box-sizing: border-box;
@@ -333,6 +361,11 @@ body.focus-mode .player-card:active {
   animation: rotateCover 14s linear infinite;
   animation-play-state: paused;
 }
+
+.player-visualizer {
+  display: block; width: 100%; height: 34px; margin: 0 auto 12px; border-radius: 8px;
+}
+.player-visualizer.hidden { display: none; }
 
 .player-card.playing .cover-container img {
   animation-play-state: running;
@@ -735,6 +768,7 @@ body.anim-no-modals .modal-overlay { transition: none !important; }
   border-radius: 16px;
   padding: 20px;
   width: 380px;
+  max-width: calc(100vw - 32px);
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -1325,6 +1359,7 @@ input:checked + .slider:before {
   width: 100%;
   max-width: 380px;
   height: 100vh;
+  height: 100dvh;
   background: rgba(10, 10, 15, 0.95);
   backdrop-filter: blur(20px);
   z-index: 10;
@@ -1390,6 +1425,10 @@ input:checked + .slider:before {
   gap: 10px;
   height: 100%;
 }
+
+.lyrics-editor-actions { display: flex; gap: 8px; }
+.lyrics-editor-actions .save-btn { flex: 1; }
+.lyrics-editor-actions .menu-opt-btn { width: auto; flex: 1; justify-content: center; }
 
 .lyrics-editor.hidden {
   display: none;
@@ -1842,6 +1881,7 @@ body.no-animations, body.no-animations * { transition: none !important; animatio
 }
 .concludor-mode.active { opacity: 1; pointer-events: auto; }
 #modal-concludor-add { z-index: 360; }
+#modal-studio-help { z-index: 390; }
 
 .concludor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .concludor-header h2 { font-size: 1.1rem; font-weight: 700; margin: 0; color: #fff; }
@@ -1969,6 +2009,46 @@ body.mobile-layout .top-left-global-bar,
 body.mobile-layout .top-global-bar,
 body.mobile-layout .floating-upload-btn { display: none; }
 
+/* Las filas de canciones eran muy opacas y tapaban el fondo/video. Ahora son bien
+   transparentes con un desenfoque suave, y el texto lleva sombra para seguir siendo legible. */
+body.mobile-layout .playlist-item {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+body.mobile-layout .playlist-item:hover,
+body.mobile-layout .playlist-item.active { background: rgba(255, 255, 255, 0.13); }
+body.mobile-layout .item-title,
+body.mobile-layout .item-artist {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+body.mobile-layout .library-panel {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+/* Algunos ajustes no aplican en celular (son cosas de escritorio): los ocultamos ahí,
+   ya sea por el interruptor de "Modo Interfaz Celular" o por detectar el dispositivo real */
+body.mobile-layout .mobile-hide-setting,
+body.is-mobile-device .mobile-hide-setting,
+body.is-mobile-device .mobile-hide-item {
+  display: none !important;
+}
+
+/* Estas 3 opciones no aplican en celular (atajos de teclado físico, barra de tareas
+   de escritorio, ventana flotante aparte) */
+
+/* Las filas de la lista tapaban demasiado el fondo/video de pantalla en celular */
+body.mobile-layout .playlist-item {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+body.mobile-layout .playlist-item .item-title,
+body.mobile-layout .playlist-item .item-artist {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
 body.mobile-layout .mobile-nowplaying-bar {
   display: flex; align-items: center; gap: 10px;
   position: fixed; left: 10px; right: 10px; bottom: 68px; z-index: 400;
@@ -1988,7 +2068,7 @@ body.mobile-layout .concludor-mode.active {
   z-index: 470;
 }
 body.mobile-layout .lyrics-panel.active {
-  position: fixed; inset: auto 0 0 0; height: 88vh; width: 100%;
+  position: fixed; inset: auto 0 0 0; height: 88vh; height: 88dvh; width: 100%;
   border-radius: 20px 20px 0 0; animation: mobileExpandIn 0.3s ease-out;
 }
 .mobile-nowplaying-bar img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
@@ -2015,9 +2095,10 @@ body.mobile-layout.mobile-player-expanded .mobile-only-btn { display: flex; }
 
 /* Fila de artista + menú de modos, y el propio menú desplegable */
 .song-info-row { display: flex; align-items: center; justify-content: center; gap: 8px; position: relative; }
-.song-info-row h3 { margin: 0; }
+.song-info-row h3 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+#btn-modes-menu { flex-shrink: 0; }
 .modes-menu {
-  position: absolute; top: calc(100% + 6px); right: 10px; z-index: 20;
+  position: fixed; z-index: 700;
   background: rgba(18, 19, 28, 0.97); backdrop-filter: blur(16px);
   border: 1px solid var(--card-border); border-radius: 14px; padding: 8px;
   display: flex; flex-direction: column; gap: 4px; width: 220px;
@@ -2025,3 +2106,88 @@ body.mobile-layout.mobile-player-expanded .mobile-only-btn { display: flex; }
 }
 .modes-menu.hidden { display: none; }
 .modes-menu .menu-opt-btn { text-align: left; padding: 9px 12px; font-size: 0.78rem; }
+
+#quick-speed-label { font-size: 0.68rem; font-weight: 700; }
+
+/* ============================================
+   MODO ESTUDIO DE LETRAS
+   ============================================ */
+.btn-studio-square { width: 32px; height: 32px; padding: 0; }
+
+.lyrics-studio {
+  position: fixed; inset: 0; z-index: 380; background: #0c0c12;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s ease-in-out;
+}
+.lyrics-studio.active { opacity: 1; pointer-events: auto; }
+
+.studio-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--card-border); }
+.studio-header h3 { margin: 0; font-size: 1rem; }
+.studio-header-actions { display: flex; align-items: center; gap: 10px; }
+
+.studio-body { flex: 1; display: flex; overflow: hidden; }
+.studio-preview {
+  width: 320px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+  padding: 24px; border-right: 1px solid var(--card-border); overflow-y: auto;
+}
+.studio-preview-cover { width: 160px; height: 160px; border-radius: 16px; object-fit: cover; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.studio-preview-title { font-weight: 700; font-size: 1.05rem; text-align: center; }
+.studio-preview-artist { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 14px; }
+.studio-progress-container { width: 100%; }
+.studio-preview .time-stamps { width: 100%; }
+.studio-preview-line {
+  margin: 18px 0; font-size: 1rem; font-weight: 700; text-align: center; min-height: 50px;
+  color: var(--primary-color);
+}
+.studio-controls { margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 18px; }
+.studio-controls .icon-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; width: auto; height: auto; padding: 6px; }
+.studio-skip-label { font-size: 0.6rem; color: var(--text-sub); }
+.studio-speed-row { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 16px; font-size: 0.75rem; color: var(--text-sub); }
+.studio-speed-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; padding: 5px 10px; border-radius: 8px; font-size: 0.72rem; cursor: pointer; }
+.studio-speed-btn.active { background: var(--primary-color); color: #12131c; font-weight: 700; border-color: transparent; }
+.btn-tap-sync {
+  width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--primary-color);
+  background: rgba(255,255,255,0.06); color: var(--primary-color); font-weight: 800; font-size: 0.95rem;
+  cursor: pointer; line-height: 1.5;
+}
+.btn-tap-sync span { font-size: 0.65rem; font-weight: 400; opacity: 0.7; }
+.btn-tap-sync:active { background: rgba(255,255,255,0.15); }
+
+.studio-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
+.studio-dropzone {
+  border: 2px dashed var(--card-border); border-radius: 14px; padding: 18px; text-align: center;
+  margin-bottom: 14px; transition: border-color 0.2s, background 0.2s;
+}
+.studio-dropzone.drag-over { border-color: var(--primary-color); background: rgba(255,255,255,0.05); }
+.studio-dropzone p { margin: 0 0 10px 0; font-size: 0.85rem; color: var(--text-sub); }
+
+.studio-batch-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 0.78rem; color: var(--text-sub); }
+.studio-mini-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff;
+  padding: 6px 10px; border-radius: 8px; font-size: 0.72rem; cursor: pointer;
+}
+.studio-mini-btn:hover { background: rgba(255,255,255,0.15); }
+
+.studio-line-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.studio-line-row {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.03); border: 1px solid transparent;
+}
+.studio-line-row.studio-active-row { border-color: var(--primary-color); background: rgba(255,229,0,0.06); }
+.studio-line-row.studio-instrumental { opacity: 0.55; }
+.studio-line-time { font-size: 0.7rem; color: var(--text-sub); width: 56px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.studio-line-text { flex: 1; background: none; border: none; color: #fff; font-size: 0.82rem; padding: 4px; }
+.studio-line-text:focus { outline: 1px solid var(--card-border); border-radius: 4px; }
+.studio-nudge-btn { background: rgba(255,255,255,0.06); border: none; color: #fff; width: 22px; height: 22px; border-radius: 5px; font-size: 0.65rem; cursor: pointer; flex-shrink: 0; }
+.studio-nudge-btn:hover { background: rgba(255,255,255,0.18); }
+.studio-mark-select { flex-shrink: 0; }
+.studio-instrumental-toggle { flex-shrink: 0; font-size: 0.65rem; padding: 4px 6px; }
+
+@media (max-width: 700px) {
+  .studio-body { flex-direction: column; }
+  .studio-preview { width: 100%; border-right: none; border-bottom: 1px solid var(--card-border); }
+}
+
+.studio-help-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.studio-help-list li { font-size: 0.82rem; line-height: 1.5; color: var(--text-sub); }
+.studio-help-list li b { color: #fff; display: block; margin-bottom: 2px; font-size: 0.85rem; }
