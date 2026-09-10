@@ -130,6 +130,7 @@
       <div class="cover-container" id="cover-container">
         <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80" alt="Carátula" id="cover">
       </div>
+      <canvas id="player-visualizer" class="player-visualizer hidden"></canvas>
 
       <div class="song-info">
         <h2 id="title">Sin canción cargada</h2>
@@ -143,12 +144,12 @@
 
       <!-- Menú "más dinámico" que agrupa Enfoque / Vehículo / Concluidor / Cine / Pantalla Completa / Mini Reproductor -->
       <div class="modes-menu hidden" id="modes-menu">
-        <button id="modes-menu-focus" class="menu-opt-btn">👁️ Modo Enfoque</button>
-        <button id="modes-menu-vehicle" class="menu-opt-btn">🚗 Modo Vehículo</button>
-        <button id="modes-menu-concludor" class="menu-opt-btn">🔗 Modo Concluidor</button>
-        <button id="modes-menu-cinema" class="menu-opt-btn">🎬 Modo Cine</button>
-        <button id="modes-menu-fullscreen" class="menu-opt-btn">⛶ Pantalla Completa</button>
-        <button id="modes-menu-mini" class="menu-opt-btn">🗗 Mini Reproductor</button>
+        <button id="modes-menu-focus" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Modo Enfoque</button>
+        <button id="modes-menu-vehicle" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm14 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5 17l1.5-6h11L19 17M6.5 11l1-3h9l1 3"/></svg> Modo Vehículo</button>
+        <button id="modes-menu-concludor" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><line x1="7.5" y1="12" x2="9.5" y2="12"/><line x1="14.5" y1="12" x2="16.5" y2="12"/></svg> Modo Concluidor</button>
+        <button id="modes-menu-cinema" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="7" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="17" y2="20"/><line x1="2" y1="9" x2="7" y2="9"/><line x1="2" y1="15" x2="7" y2="15"/><line x1="17" y1="9" x2="22" y2="9"/><line x1="17" y1="15" x2="22" y2="15"/></svg> Modo Cine</button>
+        <button id="modes-menu-fullscreen" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg> Pantalla Completa</button>
+        <button id="modes-menu-mini" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="11" y="11" width="8" height="8" rx="1"/></svg> Mini Reproductor</button>
       </div>
 
       <div class="progress-container" id="progress-container">
@@ -177,6 +178,9 @@
         </button>
         <button id="btn-fav" class="icon-btn fav-btn" title="Me gusta">
           <svg id="fav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.72-8.72 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button id="btn-quick-speed" class="icon-btn" title="Velocidad de reproducción">
+          <span id="quick-speed-label">1x</span>
         </button>
       </div>
 
@@ -327,7 +331,7 @@
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
 
-          <div class="setting-card-item" data-target="sub-controls">
+          <div class="setting-card-item mobile-hide-setting" data-target="sub-controls">
             <div class="setting-card-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
             </div>
@@ -338,7 +342,7 @@
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
 
-          <div class="setting-card-item" data-target="sub-system">
+          <div class="setting-card-item mobile-hide-setting" data-target="sub-system">
             <div class="setting-card-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             </div>
@@ -349,7 +353,7 @@
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
 
-          <div class="setting-card-item" data-target="sub-miniplayer">
+          <div class="setting-card-item mobile-hide-setting" data-target="sub-miniplayer">
             <div class="setting-card-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="11" y="11" width="8" height="8" rx="1"/></svg>
             </div>
@@ -389,6 +393,17 @@
             <div class="setting-card-content">
               <span class="setting-card-title">Animaciones</span>
               <span class="setting-card-desc">Activa o desactiva efectos de movimiento</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" data-target="sub-playback-advanced">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Reproducción Avanzada</span>
+              <span class="setting-card-desc">Fundido, auto-pausa y guardado de posición</span>
             </div>
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -445,7 +460,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
           </button>
           <div class="sub-content">
-            <button id="btn-open-visual-editor" class="menu-opt-btn primary-opt">🎨 Abrir Editor Visual de Reproductor</button>
+            <button id="btn-open-visual-editor" class="menu-opt-btn primary-opt"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Abrir Editor Visual de Reproductor</button>
 
             <div class="setting-item">
               <div class="setting-info">
@@ -608,6 +623,17 @@
 
             <div class="setting-item">
               <div class="setting-info">
+                <span class="setting-title">Visualizador de Audio</span>
+                <span class="setting-desc">Muestra un espectro de frecuencias animado sobre el reproductor</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-audio-visualizer">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
                 <span class="setting-title">Reproducir junto a otras apps</span>
                 <span class="setting-desc">Permite mantener la música en segundo plano</span>
               </div>
@@ -716,15 +742,15 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
           </button>
           <div class="sub-content">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">Modo Rendimiento</span>
-                <span class="setting-desc">Deshabilita animaciones, desenfocado (blur) y sombras para optimizar consumo</span>
+            <div class="setting-item vertical">
+              <span class="setting-title">Optimizador Gráfico</span>
+              <span class="setting-desc" style="margin-bottom:10px;">Si la app se traba, baja el nivel para aligerar los efectos visuales</span>
+              <input type="range" id="input-graphics-level" min="0" max="2" step="1" value="2">
+              <div class="graphics-level-labels">
+                <span>Ahorro</span>
+                <span>Equilibrado</span>
+                <span>Máxima Calidad</span>
               </div>
-              <label class="switch">
-                <input type="checkbox" id="toggle-performance-mode">
-                <span class="slider"></span>
-              </label>
             </div>
 
             <div class="setting-item">
@@ -863,6 +889,45 @@
           </div>
         </div>
 
+        <!-- Sub-panel: Reproducción Avanzada -->
+        <div class="settings-panel settings-sub-panel" id="sub-playback-advanced">
+          <button class="btn-sub-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver
+          </button>
+          <div class="sub-content">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Fundido al reproducir/pausar</span>
+                <span class="setting-desc">Sube y baja el volumen suavemente en vez de un corte seco</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-fade-playback" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Auto-pausa al cambiar de pestaña</span>
+                <span class="setting-desc">Pausa sola si sales de esta pestaña del navegador</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-autopause-tab">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">Recordar posición exacta</span>
+                <span class="setting-desc">Al volver a abrir la app, retoma el segundo exacto donde ibas</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-resume-position" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <!-- Sub-panel: Karaoke y Calibración de Letras -->
         <div class="settings-panel settings-sub-panel" id="sub-karaoke">
           <button class="btn-sub-back">
@@ -895,9 +960,9 @@
           </button>
           <div class="sub-content">
             <button id="preset-normal" class="menu-opt-btn">Normal (quitar presets)</button>
-            <button id="preset-game" class="menu-opt-btn">🎮 Modo Juego (menos animaciones, ahorra recursos)</button>
-            <button id="preset-night" class="menu-opt-btn">🌙 Modo Noche (filtro cálido, protege la vista)</button>
-            <button id="preset-study" class="menu-opt-btn">📚 Modo Estudio (colores neutros, sin distracciones)</button>
+            <button id="preset-game" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="5"/><line x1="7" y1="12" x2="9" y2="12"/><line x1="8" y1="11" x2="8" y2="13"/><circle cx="16" cy="10.5" r="0.9" fill="currentColor"/><circle cx="18" cy="13.5" r="0.9" fill="currentColor"/></svg> Modo Juego (menos animaciones, ahorra recursos)</button>
+            <button id="preset-night" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> Modo Noche (filtro cálido, protege la vista)</button>
+            <button id="preset-study" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Modo Estudio (colores neutros, sin distracciones)</button>
           </div>
         </div>
 
@@ -1061,7 +1126,7 @@
       <h3>Letra</h3>
       <div class="lyrics-actions">
         <button id="btn-cinema-mode" class="icon-btn" title="Modo Cine">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="7" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="17" y2="20"/><line x1="2" y1="9" x2="7" y2="9"/><line x1="2" y1="15" x2="7" y2="15"/><line x1="17" y1="9" x2="22" y2="9"/><line x1="17" y1="15" x2="22" y2="15"/></svg>
         </button>
         <button id="btn-calibrate-lyrics" class="icon-btn" title="Calibrar Letras">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
@@ -1079,7 +1144,10 @@
     </div>
     <div class="lyrics-editor hidden" id="lyrics-editor">
       <textarea id="lyrics-textarea" placeholder="Escribe la letra aquí..."></textarea>
-      <button id="btn-save-lyrics" class="save-btn">Guardar</button>
+      <div class="lyrics-editor-actions">
+        <button id="btn-clear-lyrics" class="menu-opt-btn danger">Borrar letras</button>
+        <button id="btn-save-lyrics" class="save-btn">Guardar</button>
+      </div>
     </div>
   </div>
 
@@ -1166,6 +1234,10 @@
           </div>
           <p class="calibrate-hint">Escribe el BPM real de la canción (lo puedes buscar en internet: "[nombre de la canción] BPM"). Con eso, la velocidad de la letra se ajusta sola para que se sincronice mejor.</p>
         </div>
+        <button id="btn-lyrics-studio" class="menu-opt-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Abrir Modo Estudio de Letras
+        </button>
         <button id="btn-save-calibration" class="menu-opt-btn primary-opt">Guardar</button>
       </div>
     </div>
@@ -1279,6 +1351,97 @@
     </div>
   </div>
 
+  <!-- MODO ESTUDIO DE LETRAS -->
+  <!-- AYUDA DEL MODO ESTUDIO DE LETRAS -->
+  <div class="modal-overlay hidden" id="modal-studio-help">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>Cómo calibrar bien tu letra</h3>
+        <button id="btn-close-studio-help" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <ul class="studio-help-list">
+        <li><b>1. Escucha atenta y volumen.</b> Sube el volumen o usa audífonos para escuchar el momento exacto en que inicia cada sílaba.</li>
+        <li><b>2. Velocidad y retroceso.</b> Si el tema es rápido, usa velocidad 0.5x o 0.75x y el botón -5s para repetir versos difíciles.</li>
+        <li><b>3. Tap-Sync.</b> Presiona Tap-Sync (o la barra espaciadora) justo al inicio de cada verso para asignar el tiempo en tiempo real.</li>
+        <li><b>4. Archivos y retoque.</b> Arrastra archivos .txt o .lrc para cargar letras de golpe, y retoca marcas desfasadas con los botones de +/- segundos.</li>
+        <li><b>5. No hace falta terminar de una sola vez.</b> Todo se guarda solo en cada marca — puedes cerrar el Estudio y seguir calibrando otro día desde donde quedaste.</li>
+        <li><b>6. Empieza por los coros.</b> Si una canción tiene coros repetidos, cronometra el primero con calma; el Ajuste en Lote te sirve después para correr solo un tramo si algo se desfasa.</li>
+        <li><b>7. Exporta cuando termines.</b> El botón "Exportar .lrc" te sirve como respaldo — puedes guardarlo aparte o usarlo en otro reproductor compatible con letras sincronizadas.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="lyrics-studio" id="lyrics-studio">
+    <div class="studio-header">
+      <h3>Modo Estudio de Letras</h3>
+      <div class="studio-header-actions">
+        <button id="btn-studio-help" class="icon-btn btn-studio-square" title="Ayuda">?</button>
+        <button id="btn-studio-export" class="menu-opt-btn">Exportar .lrc</button>
+        <button id="btn-close-studio" class="icon-btn" title="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="studio-body">
+      <!-- Lado Izquierdo: vista previa en vivo -->
+      <div class="studio-preview">
+        <img id="studio-cover" class="studio-preview-cover" src="" alt="Carátula">
+        <div id="studio-title" class="studio-preview-title">-</div>
+        <div id="studio-artist" class="studio-preview-artist">-</div>
+        <div class="studio-progress-container" id="studio-progress-container">
+          <div class="progress-bar" id="studio-progress"></div>
+        </div>
+        <div class="time-stamps"><span id="studio-current-time">0:00</span><span id="studio-duration">0:00</span></div>
+        <div class="studio-preview-line" id="studio-preview-line">Sin letra cargada todavía</div>
+        <div class="studio-controls">
+          <button id="btn-studio-back5" class="icon-btn" title="Retroceder 5 segundos">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            <span class="studio-skip-label">5s</span>
+          </button>
+          <button id="btn-studio-playpause" class="btn-play" title="Reproducir/Pausa">
+            <svg id="studio-play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button id="btn-studio-fwd5" class="icon-btn" title="Adelantar 5 segundos">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <span class="studio-skip-label">5s</span>
+          </button>
+        </div>
+        <div class="studio-speed-row">
+          <span>Velocidad:</span>
+          <button class="studio-speed-btn" data-speed="0.5">0.5x</button>
+          <button class="studio-speed-btn" data-speed="0.75">0.75x</button>
+          <button class="studio-speed-btn active" data-speed="1">1.0x</button>
+        </div>
+        <button id="btn-tap-sync" class="btn-tap-sync">TAP SYNC<br><span>(o barra espaciadora)</span></button>
+      </div>
+
+      <!-- Lado Derecho: panel de estudio -->
+      <div class="studio-panel">
+        <div class="studio-dropzone" id="studio-dropzone">
+          <p>Arrastra un archivo <b>.txt</b> o <b>.lrc</b> aquí</p>
+          <button id="btn-studio-browse" class="menu-opt-btn">Buscar archivo</button>
+          <input type="file" id="input-studio-file" accept=".txt,.lrc" hidden>
+        </div>
+
+        <div class="studio-batch-row">
+          <span>Ajuste en lote:</span>
+          <button class="studio-mini-btn" data-batch="-1000">-1s</button>
+          <button class="studio-mini-btn" data-batch="-100">-100ms</button>
+          <button class="studio-mini-btn" data-batch="100">+100ms</button>
+          <button class="studio-mini-btn" data-batch="1000">+1s</button>
+          <button id="btn-studio-distribute" class="studio-mini-btn" title="Reparte el tiempo entre la primera y última fila marcada">Distribuir</button>
+        </div>
+
+        <ul class="studio-line-list" id="studio-line-list">
+          <li class="empty-msg">Importa un archivo o edita la letra normal primero.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL AGREGAR CANCIÓN AL CONCLUIDOR -->
   <div class="modal-overlay hidden" id="modal-concludor-add">
     <div class="modal-window">
@@ -1320,7 +1483,7 @@
 
   <!-- BARRA FLOTANTE DEL EDITOR VISUAL -->
   <div class="visual-editor-toolbar hidden" id="visual-editor-toolbar">
-    <div class="ve-toolbar-title">🎨 Modo Edición en Vivo</div>
+    <div class="ve-toolbar-title">Modo Edición en Vivo</div>
     <p class="ve-toolbar-hint">Toca cualquier tarjeta resaltada para personalizarla.</p>
     <button id="btn-reset-visual-editor" class="menu-opt-btn danger">Restablecer Interfaz por Defecto</button>
     <button id="btn-exit-visual-editor" class="menu-opt-btn primary-opt">Salir del Editor</button>
@@ -1366,7 +1529,7 @@
         </div>
 
         <button id="btn-apply-card-style" class="menu-opt-btn primary-opt">Aplicar</button>
-        <button id="btn-download-card-template" class="menu-opt-btn">📥 Descargar Plantilla (PNG)</button>
+        <button id="btn-download-card-template" class="menu-opt-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Plantilla (PNG)</button>
         <button id="btn-clear-card-style" class="menu-opt-btn danger">Quitar Personalización</button>
       </div>
     </div>
