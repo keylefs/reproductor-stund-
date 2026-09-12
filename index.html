@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reproductor Studio Pro</title>
+  <title>GLASSTRACK</title>
   
   <!-- Icono (favicon) para la pestaña -->
   <link rel="icon" type="image/png" href="img/favicon.png">
@@ -404,6 +404,17 @@
             <div class="setting-card-content">
               <span class="setting-card-title">Reproducción Avanzada</span>
               <span class="setting-card-desc">Fundido, auto-pausa y guardado de posición</span>
+            </div>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <div class="setting-card-item" id="btn-app-info">
+            <div class="setting-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </div>
+            <div class="setting-card-content">
+              <span class="setting-card-title">Información de la aplicación</span>
+              <span class="setting-card-desc">Sobre GLASSTRACK, versión y créditos</span>
             </div>
             <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -1376,6 +1387,10 @@
   <div class="lyrics-studio" id="lyrics-studio">
     <div class="studio-header">
       <h3>Modo Estudio de Letras</h3>
+      <div class="studio-tabs">
+        <button id="studio-tab-lines" class="studio-tab-btn active" data-tab="lines">Letras Normales</button>
+        <button id="studio-tab-karaoke" class="studio-tab-btn" data-tab="karaoke">Calibración Karaoke</button>
+      </div>
       <div class="studio-header-actions">
         <button id="btn-studio-help" class="icon-btn btn-studio-square" title="Ayuda">?</button>
         <button id="btn-studio-export" class="menu-opt-btn">Exportar .lrc</button>
@@ -1435,9 +1450,89 @@
           <button id="btn-studio-distribute" class="studio-mini-btn" title="Reparte el tiempo entre la primera y última fila marcada">Distribuir</button>
         </div>
 
+        <div class="studio-batch-row">
+          <button id="btn-studio-add-line" class="studio-mini-btn">+ Agregar Línea</button>
+          <button id="btn-studio-reset-all" class="studio-mini-btn studio-mini-danger">Eliminar y Resetear Todo</button>
+        </div>
+
         <ul class="studio-line-list" id="studio-line-list">
           <li class="empty-msg">Importa un archivo o edita la letra normal primero.</li>
         </ul>
+
+        <!-- Panel de Calibración Karaoke: desglosa la línea activa en palabras editables -->
+        <div class="studio-karaoke-panel hidden" id="studio-karaoke-panel">
+          <p class="studio-karaoke-hint">El Tap-Sync general está desactivado aquí, pero puedes tocar cada palabra justo cuando se canta para marcar su tiempo exacto — usa los botones ±ms solo para ajustar fino después.</p>
+          <div class="studio-karaoke-line-progress-wrap">
+            <div class="studio-karaoke-line-progress-container"><div class="studio-karaoke-line-progress-bar" id="studio-karaoke-line-progress"></div></div>
+            <div class="studio-karaoke-line-progress-label">Progreso de la línea actual</div>
+          </div>
+          <div class="studio-karaoke-context" id="studio-karaoke-prev-line"></div>
+          <div class="studio-karaoke-words" id="studio-karaoke-words">
+            <p class="empty-msg">Esperando a que suene una línea con tiempo asignado...</p>
+          </div>
+          <div class="studio-karaoke-context" id="studio-karaoke-next-line"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL INFORMACIÓN DE LA APLICACIÓN -->
+  <div class="modal-overlay hidden" id="modal-app-info">
+    <div class="modal-window app-info-window">
+      <button id="btn-close-app-info" class="icon-btn app-info-close" title="Cerrar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="app-info-body">
+        <div class="app-info-header">
+        <img src="img/tu_logo.png" alt="GLASSTRACK Logo" style="max-height: 60px; width: auto; display: block; margin: 0 auto 10px;">
+          <h2>💎 GLASSTRACK PRO</h2>
+          <p class="app-info-meta">Desarrollado y Diseñado por: <b>Keylefs RT</b></p>
+          <p class="app-info-meta">Versión: 230.31 (Glassmorphism &amp; DSP Engine)</p>
+        </div>
+
+        <div class="app-info-section">
+          <h4>📌 Resumen General</h4>
+          <p>Esta aplicación es un reproductor de música web de alta fidelidad, ideado para ofrecer una experiencia auditiva y visual completa directamente en el navegador. Combina una interfaz limpia basada en la estética Glassmorphism (efecto cristal traslúcido) con un potente motor de procesamiento de sonido en tiempo real (Web Audio API) y almacenamiento local persistente sin servidores externos (IndexedDB).</p>
+        </div>
+
+        <div class="app-info-section">
+          <h4>⚙️ Funciones y Características Integradas</h4>
+          <p><b>🎛️ Controles de Reproducción y Modos:</b></p>
+          <ul>
+            <li>Controles esenciales: Reproducir, pausar, pista siguiente, pista anterior y modo aleatorio.</li>
+            <li>Modos de reproducción personalizados y configurables.</li>
+          </ul>
+          <p><b>🔊 Motor de Audio y Ecualización (DSP):</b></p>
+          <ul>
+            <li>Ecualizador multibanda con presets dedicados: Graves, Agudos, Voz, Flat, Bass Boost y Audio 8D.</li>
+            <li>Control e independencia de volumen para voz y música.</li>
+          </ul>
+          <p><b>🎤 Sistema y Estudio de Letras:</b></p>
+          <ul>
+            <li>Modo Cine: Presentación visual ambiental con transparencias independientes.</li>
+            <li>Karaoke de letras: Sincronización y resalte de texto en tiempo real al ritmo de la música.</li>
+            <li>Calibrador de Letras: Ajustes de tamaño de escala, velocidad de desplazamiento, retroceso y adelantado.</li>
+            <li>Editor de Letras: Panel para modificar, borrar o guardar letras personalizadas.</li>
+          </ul>
+          <p><b>🎨 Interfaz Visual y Modos de Pantalla:</b></p>
+          <ul>
+            <li>Estética Glassmorphism con Modo Desenfoque ajustables.</li>
+            <li>Modo Auto, soporte para Pantalla Completa, Mini Reproductor flotante, barra de notificaciones y animaciones del reproductor.</li>
+          </ul>
+          <p><b>📁 Gestión de Biblioteca y Herramientas:</b></p>
+          <ul>
+            <li>Gestión total de biblioteca y listas de reproducción (Playlists) en IndexedDB.</li>
+            <li>Temporizador de apagado automático.</li>
+            <li>Atajos de teclado intuitivos para un control rápido.</li>
+            <li>Opción de restablecimiento a valores de fábrica.</li>
+          </ul>
+        </div>
+
+        <div class="app-info-section">
+          <h4>🤝 Créditos y Agradecimientos</h4>
+          <p>Creador y Desarrollador Principal: <b>Keylefs RT</b></p>
+          <p>Agradecimientos: A las comunidades de desarrollo web de código abierto, a los estándares de Web Audio API por hacer posible el procesamiento digital de sonido en el navegador, y a todos los que probaron la aplicación aportando sugerencias para pulir cada detalle.</p>
+        </div>
       </div>
     </div>
   </div>
