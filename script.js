@@ -273,6 +273,16 @@ const btnRemoveBg = document.getElementById('btn-remove-bg');
 const selectFont = document.getElementById('select-font');
 const inputCustomColor = document.getElementById('input-custom-color');
 const btnFactoryReset = document.getElementById('btn-factory-reset');
+const btnAppInfo = document.getElementById('btn-app-info');
+const modalAppInfo = document.getElementById('modal-app-info');
+const btnCloseAppInfo = document.getElementById('btn-close-app-info');
+if (btnAppInfo) btnAppInfo.addEventListener('click', () => { playSFX('open'); openModal(modalAppInfo); });
+if (btnCloseAppInfo) btnCloseAppInfo.addEventListener('click', () => { playSFX('close'); closeModal(modalAppInfo); });
+if (modalAppInfo) {
+  modalAppInfo.addEventListener('click', (e) => {
+    if (e.target === modalAppInfo) { playSFX('close'); closeModal(modalAppInfo); }
+  });
+}
 
 const toggleSFX = document.getElementById('toggle-sfx');
 const toggleCrossfade = document.getElementById('toggle-crossfade');
@@ -622,33 +632,56 @@ function showToast(message, type = 'info', duration = 4000) {
   }, duration);
 }
 
+// Un solo AudioContext reutilizado para los SFX (antes se creaba uno nuevo cada vez,
+// lo cual desperdicia recursos y puede sonar entrecortado).
+let sfxAudioCtx = null;
+function getSfxContext() {
+  if (!sfxAudioCtx) {
+    try { sfxAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return null; }
+  }
+  if (sfxAudioCtx.state === 'suspended') sfxAudioCtx.resume();
+  return sfxAudioCtx;
+}
+
+// Una sola nota suave: ataque rápido pero sin golpe seco, caída exponencial, y un
+// filtro pasa-bajos para quitarle lo áspero al tono (nada de "pitido" plano).
+function playSfxTone(ctx, freq, startTime, duration, peakGain, wave) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 3200;
+  osc.type = wave || 'triangle';
+  osc.frequency.setValueAtTime(freq, startTime);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.02);
+}
+
 function playSFX(type = 'click') {
   if (!sfxEnabled) return;
+  const ctx = getSfxContext();
+  if (!ctx) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
+    const now = ctx.currentTime;
     if (type === 'open') {
-      osc.frequency.setValueAtTime(300, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      // Dos notas subiendo (Do5 -> Sol5): transmite "se abrió algo"
+      playSfxTone(ctx, 523.25, now, 0.16, 0.05, 'triangle');
+      playSfxTone(ctx, 783.99, now + 0.05, 0.18, 0.045, 'triangle');
     } else if (type === 'close') {
-      osc.frequency.setValueAtTime(500, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      // Las mismas notas al revés: transmite "se cerró"
+      playSfxTone(ctx, 783.99, now, 0.14, 0.045, 'triangle');
+      playSfxTone(ctx, 523.25, now + 0.05, 0.18, 0.05, 'triangle');
     } else {
-      osc.frequency.setValueAtTime(400, ctx.currentTime);
-      gain.gain.setValueAtTime(0.03, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+      // Click neutro: un toque corto y suave, no un pitido
+      playSfxTone(ctx, 660, now, 0.08, 0.035, 'sine');
     }
-
-    osc.start();
-    osc.stop(ctx.currentTime + 0.09);
   } catch (e) {}
 }
 
@@ -659,7 +692,7 @@ function updateMediaSession(song) {
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: song.title || "Sin canción cargada",
-      artist: song.artist || "Reproductor Studio Pro",
+      artist: song.artist || "GLASSTRACK",
       album: "Mi Música",
       artwork: [
         { src: song.cover, sizes: '96x96', type: 'image/jpeg' },
@@ -2047,12 +2080,20 @@ window.addEventListener('keydown', (e) => {
     const lines = lyricsBody.querySelectorAll('.lyrics-line');
     if (lines.length > 0) {
       const currentSong = songList[currentIndex] || {};
-      const calib = currentSong.lyricsCalibration || { speed: 1, offset: 0 };
-      let adjustedTime = (currentTime + (calib.offset || 0)) * (calib.speed || 1);
-      if (adjustedTime < 0) adjustedTime = 0;
+      const hasRealTimes = currentSong.lrcLines && currentSong.lrcLines.length > 0;
+      // Los tiempos reales del Modo Estudio se marcaron contra el tiempo real de la pista
+      // (currentTime), así que se comparan tal cual. La calibración de velocidad/desfase
+      // es solo para el método aproximado de abajo — aplicarla también aquí era lo que
+      // hacía que las letras se "adelantaran", sobre todo con velocidades de reproducción distintas a 1x.
+      let adjustedTime = currentTime;
+      if (!hasRealTimes) {
+        const calib = currentSong.lyricsCalibration || { speed: 1, offset: 0 };
+        adjustedTime = (currentTime + (calib.offset || 0)) * (calib.speed || 1);
+        if (adjustedTime < 0) adjustedTime = 0;
+      }
 
       let lineIndex;
-      if (currentSong.lrcLines && currentSong.lrcLines.length > 0) {
+      if (hasRealTimes) {
         // Tenemos tiempos reales (del Modo Estudio): usamos el momento exacto de cada línea,
         // saltando las que todavía no tienen tiempo marcado (time: null)
         lineIndex = -1;
@@ -2093,9 +2134,7 @@ window.addEventListener('keydown', (e) => {
         });
 
         if (karaokeActive && cinemaLines[lineIndex]) {
-          const rawLineProgress = (adjustedTime / duration) * lines.length - lineIndex;
-          const lineProgress = Math.max(0, Math.min(1, rawLineProgress));
-          updateKaraokeWords(cinemaLines[lineIndex], lineProgress);
+          updateKaraokeWords(cinemaLines[lineIndex], lineIndex, adjustedTime, lines.length, duration);
         }
       }
     }
@@ -2417,14 +2456,27 @@ function applyCinemaBgMode(mode) {
   else if (mode === 'animated') cinemaMode.classList.add('bg-animated');
 }
 
-// Resalta palabra por palabra dentro de la línea activa (aproximado: reparte el
-// tiempo de la línea entre sus palabras, ya que no tenemos el tiempo exacto de cada una)
-function updateKaraokeWords(activeLineEl, lineProgress) {
+// Resalta palabra por palabra dentro de la línea activa: usa los tiempos reales
+// calibrados en el Modo Karaoke si existen; si no, aproxima repartiendo el tiempo.
+function updateKaraokeWords(activeLineEl, lineIndex, adjustedTime, totalLines, duration) {
   if (!activeLineEl) return;
   const words = activeLineEl.querySelectorAll('.karaoke-word');
   if (words.length === 0) return;
-  const activeWordIndex = Math.floor(lineProgress * words.length);
-  words.forEach((w, i) => w.classList.toggle('word-active', i <= activeWordIndex));
+
+  const song = songList[currentIndex];
+  const realWords = song && song.karaokeWords && song.karaokeWords[lineIndex];
+  if (realWords && realWords.length === words.length) {
+    let activeWordIndex = -1;
+    for (let i = 0; i < realWords.length; i++) {
+      if (realWords[i].time <= adjustedTime) activeWordIndex = i; else break;
+    }
+    words.forEach((w, i) => w.classList.toggle('word-active', i <= activeWordIndex));
+  } else {
+    const rawLineProgress = (adjustedTime / duration) * totalLines - lineIndex;
+    const lineProgress = Math.max(0, Math.min(1, rawLineProgress));
+    const activeWordIndex = Math.floor(lineProgress * words.length);
+    words.forEach((w, i) => w.classList.toggle('word-active', i <= activeWordIndex));
+  }
 }
 
 // ==========================================
@@ -3653,6 +3705,7 @@ function renderStudioList() {
       <button class="studio-nudge-btn" data-idx="${i}" data-nudge="100">+.1</button>
       <button class="studio-nudge-btn" data-idx="${i}" data-nudge="500">+.5</button>
       <button class="studio-nudge-btn studio-instrumental-toggle" data-idx="${i}" title="Marcar como instrumental">🎵</button>
+      <button class="studio-nudge-btn studio-delete-line" data-idx="${i}" title="Eliminar esta línea">✕</button>
     </li>`).join('');
 
   list.querySelectorAll('.studio-line-text').forEach(inp => {
@@ -3683,6 +3736,45 @@ function renderStudioList() {
         saveStudioLyrics();
       }
     });
+  });
+  list.querySelectorAll('.studio-delete-line').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      playSFX('click');
+      const idx = parseInt(e.currentTarget.dataset.idx, 10);
+      studioLines.splice(idx, 1);
+      if (studioTapIndex > idx) studioTapIndex--;
+      renderStudioList();
+      saveStudioLyrics();
+    });
+  });
+}
+
+// Agregar una línea nueva vacía al final, para letras que quedaron incompletas
+const btnStudioAddLine = document.getElementById('btn-studio-add-line');
+if (btnStudioAddLine) {
+  btnStudioAddLine.addEventListener('click', () => {
+    playSFX('click');
+    studioLines.push({ time: null, text: '', instrumental: false });
+    renderStudioList();
+    saveStudioLyrics();
+    const rows = document.querySelectorAll('.studio-line-row');
+    if (rows.length > 0) rows[rows.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+// Elimina todos los tiempos marcados (conserva el texto) para volver a calibrar desde cero
+const btnStudioResetAll = document.getElementById('btn-studio-reset-all');
+if (btnStudioResetAll) {
+  btnStudioResetAll.addEventListener('click', () => {
+    playSFX('click');
+    if (!confirm('¿Seguro que vas a borrar todos los tiempos marcados? El texto de las líneas se conserva.')) return;
+    studioLines.forEach(l => { l.time = null; });
+    studioTapIndex = 0;
+    const song = songList[currentIndex];
+    if (song) song.karaokeWords = {};
+    renderStudioList();
+    saveStudioLyrics();
+    showToast('Se borraron todos los tiempos. Puedes volver a calibrar desde cero.', 'info');
   });
 }
 
@@ -3737,6 +3829,9 @@ if (btnLyricsStudio) {
     studioTapIndex = 0;
     renderStudioList();
     document.querySelectorAll('.studio-speed-btn').forEach(b => b.classList.toggle('active', b.dataset.speed === '1'));
+    // Siempre arranca en la pestaña de Letras Normales, aunque la última vez hayas usado Karaoke
+    if (studioTabLines) studioTabLines.click();
+    karaokeRenderedLineIndex = null;
     if (lyricsStudioEl) lyricsStudioEl.classList.add('active');
   });
 }
@@ -3778,7 +3873,10 @@ if (btnStudioBrowse) btnStudioBrowse.addEventListener('click', () => { if (input
 if (inputStudioFile) inputStudioFile.addEventListener('change', (e) => handleStudioFile(e.target.files[0]));
 
 // Tap-Sync: marca el segundo exacto en la línea actual y pasa a la siguiente
+let studioTabMode = 'lines'; // 'lines' | 'karaoke'
+
 function doTapSync() {
+  if (studioTabMode === 'karaoke') { showToast('Tap-Sync está desactivado en la pestaña de Calibración Karaoke.', 'error'); return; }
   if (studioLines.length === 0) return;
   if (studioTapIndex >= studioLines.length) { showToast('Ya marcaste todas las líneas.', 'info', 2000); return; }
   studioLines[studioTapIndex].time = activeAudio.currentTime || 0;
@@ -3828,13 +3926,7 @@ document.querySelectorAll('.studio-speed-btn').forEach(btn => {
   });
 });
 
-if (studioProgressContainer) {
-  studioProgressContainer.addEventListener('click', (e) => {
-    if (activeAudio.duration) {
-      activeAudio.currentTime = (e.offsetX / studioProgressContainer.clientWidth) * activeAudio.duration;
-    }
-  });
-}
+makeSeekbarDraggable(studioProgressContainer, studioProgress, document.getElementById('studio-current-time'));
 
 // Ajuste en lote: mueve TODAS las líneas ya marcadas la misma cantidad de tiempo
 document.querySelectorAll('.studio-mini-btn[data-batch]').forEach(btn => {
@@ -3928,5 +4020,143 @@ setInterval(() => {
   if (btnStudioPlayPause && playIcon) {
     const icon = document.getElementById('studio-play-icon');
     if (icon) icon.innerHTML = playIcon.innerHTML;
+  }
+}, 300);
+
+// ==========================================
+// MODO CALIBRACIÓN KARAOKE (desglosa la línea activa en palabras editables)
+// ==========================================
+const studioTabLines = document.getElementById('studio-tab-lines');
+const studioTabKaraoke = document.getElementById('studio-tab-karaoke');
+const studioLineList = document.getElementById('studio-line-list');
+const studioDropzoneEl = document.getElementById('studio-dropzone');
+const studioBatchRow = document.querySelector('.studio-batch-row');
+const studioKaraokePanel = document.getElementById('studio-karaoke-panel');
+let karaokeRenderedLineIndex = null;
+
+function songHasCalibratedLines() {
+  return studioLines.some(l => l.time !== null && l.time !== undefined);
+}
+
+if (studioTabLines) {
+  studioTabLines.addEventListener('click', () => {
+    playSFX('click');
+    studioTabMode = 'lines';
+    studioTabLines.classList.add('active');
+    if (studioTabKaraoke) studioTabKaraoke.classList.remove('active');
+    if (studioLineList) studioLineList.classList.remove('hidden');
+    if (studioDropzoneEl) studioDropzoneEl.classList.remove('hidden');
+    if (studioBatchRow) studioBatchRow.classList.remove('hidden');
+    if (studioKaraokePanel) studioKaraokePanel.classList.add('hidden');
+  });
+}
+if (studioTabKaraoke) {
+  studioTabKaraoke.addEventListener('click', () => {
+    playSFX('click');
+    if (!songHasCalibratedLines()) {
+      showToast('No puedes entrar aquí, primero tienes que calibrar las letras normales.', 'error', 5000);
+      return;
+    }
+    studioTabMode = 'karaoke';
+    studioTabKaraoke.classList.add('active');
+    if (studioTabLines) studioTabLines.classList.remove('active');
+    if (studioLineList) studioLineList.classList.add('hidden');
+    if (studioDropzoneEl) studioDropzoneEl.classList.add('hidden');
+    if (studioBatchRow) studioBatchRow.classList.add('hidden');
+    if (studioKaraokePanel) studioKaraokePanel.classList.remove('hidden');
+    karaokeRenderedLineIndex = null; // fuerza a redibujar la línea actual ya
+  });
+}
+
+// Reparte parejo el tiempo entre las palabras de una línea, entre su inicio y el inicio
+// de la siguiente línea con tiempo (o +3s si es la última). Es solo el punto de partida:
+// después se ajusta fino con los botones de milisegundos.
+function generateWordTimes(lineIndex) {
+  const line = studioLines[lineIndex];
+  if (!line || line.time === null) return [];
+  const words = line.text.split(' ').filter(w => w !== '');
+  let nextTime = line.time + 3;
+  for (let i = lineIndex + 1; i < studioLines.length; i++) {
+    if (studioLines[i].time !== null) { nextTime = studioLines[i].time; break; }
+  }
+  const span = Math.max(0.3, nextTime - line.time);
+  return words.map((word, i) => ({ word, time: line.time + (span * i) / words.length }));
+}
+
+function renderKaraokeWords(lineIndex) {
+  const wordsContainer = document.getElementById('studio-karaoke-words');
+  const prevLineEl = document.getElementById('studio-karaoke-prev-line');
+  const nextLineEl = document.getElementById('studio-karaoke-next-line');
+  if (!wordsContainer) return;
+
+  if (lineIndex < 0 || !studioLines[lineIndex]) {
+    wordsContainer.innerHTML = '<p class="empty-msg">Esperando a que suene una línea con tiempo asignado...</p>';
+    if (prevLineEl) prevLineEl.textContent = '';
+    if (nextLineEl) nextLineEl.textContent = '';
+    return;
+  }
+
+  if (prevLineEl) prevLineEl.textContent = studioLines[lineIndex - 1] ? studioLines[lineIndex - 1].text : '';
+  if (nextLineEl) nextLineEl.textContent = studioLines[lineIndex + 1] ? studioLines[lineIndex + 1].text : '';
+
+  const song = songList[currentIndex];
+  if (!song.karaokeWords) song.karaokeWords = {};
+  if (!song.karaokeWords[lineIndex]) {
+    song.karaokeWords[lineIndex] = generateWordTimes(lineIndex);
+    updateSongInDB(song);
+  }
+  const wordTimes = song.karaokeWords[lineIndex];
+
+  wordsContainer.innerHTML = wordTimes.map((w, i) => `
+    <div class="studio-karaoke-word-chip" data-line="${lineIndex}" data-word="${i}">
+      <button class="studio-karaoke-word-text" data-line="${lineIndex}" data-word="${i}" title="Tócala justo cuando se cante">${w.word}</button>
+      <span class="studio-karaoke-word-time">${formatLrcTime(w.time)}</span>
+      <div class="studio-karaoke-word-btns">
+        <button class="studio-nudge-btn" data-nudge="-100">-100</button>
+        <button class="studio-nudge-btn" data-nudge="-50">-50</button>
+        <button class="studio-nudge-btn" data-nudge="50">+50</button>
+        <button class="studio-nudge-btn" data-nudge="100">+100</button>
+      </div>
+    </div>`).join('');
+
+  // Tap-sync por palabra: tócala justo cuando se cante y le marca su tiempo real
+  wordsContainer.querySelectorAll('.studio-karaoke-word-text').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      playSFX('click');
+      const li = parseInt(e.currentTarget.dataset.line, 10);
+      const wi = parseInt(e.currentTarget.dataset.word, 10);
+      const song2 = songList[currentIndex];
+      if (song2.karaokeWords && song2.karaokeWords[li] && song2.karaokeWords[li][wi]) {
+        song2.karaokeWords[li][wi].time = activeAudio.currentTime || 0;
+        updateSongInDB(song2);
+        renderKaraokeWords(li);
+      }
+    });
+  });
+
+  wordsContainer.querySelectorAll('.studio-nudge-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      playSFX('click');
+      const chip = e.currentTarget.closest('.studio-karaoke-word-chip');
+      const li = parseInt(chip.dataset.line, 10);
+      const wi = parseInt(chip.dataset.word, 10);
+      const delta = parseInt(e.currentTarget.dataset.nudge, 10) / 1000;
+      const song2 = songList[currentIndex];
+      if (song2.karaokeWords && song2.karaokeWords[li] && song2.karaokeWords[li][wi]) {
+        song2.karaokeWords[li][wi].time = Math.max(0, song2.karaokeWords[li][wi].time + delta);
+        updateSongInDB(song2);
+        renderKaraokeWords(li);
+      }
+    });
+  });
+}
+
+// Se conecta al mismo reloj que ya sigue la línea activa del Estudio
+setInterval(() => {
+  if (!lyricsStudioEl || !lyricsStudioEl.classList.contains('active') || studioTabMode !== 'karaoke') return;
+  const activeIdx = getActiveStudioLineIndex(activeAudio.currentTime || 0);
+  if (activeIdx !== karaokeRenderedLineIndex) {
+    karaokeRenderedLineIndex = activeIdx;
+    renderKaraokeWords(activeIdx);
   }
 }, 300);
