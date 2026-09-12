@@ -55,9 +55,21 @@ body.graphics-level-1 .player-visualizer,
 body.graphics-level-1 .concludor-eq-viz {
   display: none !important;
 }
-body.graphics-level-1 *,
-body.graphics-level-1 *::before,
-body.graphics-level-1 *::after {
+/* Bug corregido: antes esto le ponía blur a TODOS los elementos de la página (con "*"),
+   lo que multiplicaba el trabajo del navegador y causaba los lagazos. Ahora solo
+   reduce el blur donde ya se usaba de verdad. */
+body.graphics-level-1 .player-card,
+body.graphics-level-1 .library-panel,
+body.graphics-level-1 .eq-panel,
+body.graphics-level-1 #vm-panel,
+body.graphics-level-1 .modal-overlay,
+body.graphics-level-1 .lyrics-panel,
+body.graphics-level-1 .global-icon-btn,
+body.graphics-level-1 .modes-menu,
+body.graphics-level-1 .floating-upload-btn,
+body.graphics-level-1 .visual-editor-toolbar,
+body.graphics-level-1 .dragdrop-overlay,
+body.graphics-level-1 .concludor-card {
   backdrop-filter: blur(6px) !important;
   -webkit-backdrop-filter: blur(6px) !important;
 }
@@ -1762,12 +1774,22 @@ body.no-animations, body.no-animations * { transition: none !important; animatio
 #cinema-mode.bg-white .cinema-bg { background: #fff !important; animation: none !important; filter: none !important; transform: none !important; }
 #cinema-mode.bg-white .cinema-track-info h4,
 #cinema-mode.bg-white .cinema-lyrics-body .lyrics-line { color: #111; }
+#cinema-mode.bg-white .karaoke-word.word-active {
+  color: #111;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
+}
 #cinema-mode.bg-white .cinema-track-info p { color: rgba(0,0,0,0.6); }
 #cinema-mode.bg-animated .cinema-bg { opacity: 0; }
 
 /* Palabra por palabra en Modo Karaoke (dentro del Modo Cine) */
-.karaoke-word { opacity: 0.4; transition: opacity 0.15s linear; }
-.karaoke-word.word-active { opacity: 1; }
+/* El Modo Karaoke ya no toca la opacidad de la palabra (eso lo maneja solo la línea del
+   Modo Cine, arriba). La palabra "cantada" se ilumina con color y resplandor, no tapando
+   la transparencia original de las líneas que todavía no están activas. */
+.karaoke-word { transition: color 0.15s linear, text-shadow 0.15s linear; }
+.karaoke-word.word-active {
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.9), 0 0 18px rgba(255, 255, 255, 0.5);
+}
 
 /* Panel Voz / Música */
 .vm-hint { font-size: 0.7rem; color: var(--text-sub); line-height: 1.4; margin: 4px 0 10px 0; }
@@ -2191,3 +2213,54 @@ body.mobile-layout.mobile-player-expanded .mobile-only-btn { display: flex; }
 .studio-help-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 .studio-help-list li { font-size: 0.82rem; line-height: 1.5; color: var(--text-sub); }
 .studio-help-list li b { color: #fff; display: block; margin-bottom: 2px; font-size: 0.85rem; }
+
+/* Pestañas del Modo Estudio (Letras Normales / Calibración Karaoke) */
+.studio-tabs { display: flex; gap: 6px; }
+.studio-tab-btn {
+  background: none; border: none; color: var(--text-sub); padding: 8px 14px;
+  font-size: 0.8rem; cursor: pointer; border-bottom: 2px solid transparent;
+}
+.studio-tab-btn.active { color: #fff; border-bottom-color: var(--primary-color); font-weight: 700; }
+
+/* Panel de Calibración Karaoke */
+.studio-karaoke-panel { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+.studio-karaoke-panel.hidden { display: none; }
+.studio-karaoke-hint { font-size: 0.72rem; color: var(--text-sub); line-height: 1.4; margin: 0 0 16px 0; }
+.studio-karaoke-context { font-size: 0.75rem; color: var(--text-sub); text-align: center; opacity: 0.5; padding: 6px; }
+.studio-karaoke-words { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 20px 0; }
+.studio-karaoke-word-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--card-border);
+  border-radius: 12px; padding: 10px 12px;
+}
+.studio-karaoke-word-text {
+  font-size: 1rem; font-weight: 700; background: none; border: none; color: #fff;
+  cursor: pointer; padding: 4px 2px; border-radius: 6px;
+}
+.studio-karaoke-word-text:hover, .studio-karaoke-word-text:active { background: rgba(255,229,0,0.15); color: var(--primary-color); }
+.studio-karaoke-word-time { font-size: 0.65rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.studio-karaoke-word-btns { display: flex; gap: 4px; }
+
+.studio-mini-danger { color: #ff6b6b; border-color: rgba(239, 68, 68, 0.3); }
+.studio-mini-danger:hover { background: rgba(239, 68, 68, 0.15); }
+
+/* Barra de progreso de la línea actual, dentro del panel de Calibración Karaoke */
+.studio-karaoke-line-progress-wrap { padding: 0 6px 14px 6px; }
+.studio-karaoke-line-progress-container { background: rgba(255,255,255,0.1); border-radius: 4px; height: 4px; width: 100%; }
+.studio-karaoke-line-progress-bar { background: var(--primary-color); border-radius: 4px; height: 100%; width: 0%; transition: width 0.1s linear; }
+.studio-karaoke-line-progress-label { font-size: 0.65rem; color: var(--text-sub); text-align: center; margin-top: 4px; }
+
+/* Modal de Información de la Aplicación (GLASSTRACK) */
+.app-info-window { width: 480px; max-width: 92vw; max-height: 80vh; overflow-y: auto; position: relative; padding-top: 40px; }
+#modal-app-info { backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+.app-info-close { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.08); }
+.app-info-body { display: flex; flex-direction: column; gap: 22px; }
+.app-info-header { text-align: center; }
+.app-info-logo { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; margin-bottom: 10px; background: rgba(255,255,255,0.06); }
+.app-info-header h2 { margin: 0 0 6px 0; font-size: 1.2rem; }
+.app-info-meta { margin: 2px 0; font-size: 0.78rem; color: var(--text-sub); }
+.app-info-section h4 { margin: 0 0 8px 0; font-size: 0.88rem; }
+.app-info-section p { margin: 6px 0; font-size: 0.8rem; line-height: 1.5; color: var(--text-sub); }
+.app-info-section p b { color: #fff; }
+.app-info-section ul { margin: 4px 0 10px 0; padding-left: 18px; }
+.app-info-section li { font-size: 0.78rem; line-height: 1.6; color: var(--text-sub); }
