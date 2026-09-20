@@ -111,7 +111,7 @@ let totalPlayedSeconds = parseInt(localStorage.getItem('totalPlayedSeconds') || 
 let sleepTimerInterval = null;
 let sleepTimeRemaining = 0;
 let editingPlaylistName = null;
-let sfxEnabled = true;
+let sfxEnabled = localStorage.getItem('glasstrack_sfx_enabled') === 'true';
 let pendingEditCover = null;
 let pendingCalibration = { scale: 100, speed: 1, offset: 0 };
 let pendingBpm = null;
@@ -723,24 +723,46 @@ function getSfxContext() {
   return sfxAudioCtx;
 }
 
-// Una sola nota suave: ataque rápido pero sin golpe seco, caída exponencial, y un
-// filtro pasa-bajos para quitarle lo áspero al tono (nada de "pitido" plano).
-function playSfxTone(ctx, freq, startTime, duration, peakGain, wave) {
+// Sonido de interfaz estilo teclado mecánico: un golpe muy corto, con
+// transitorio agudo + pequeño "thock" filtrado. No usa archivos externos.
+function playMechanicalKey(ctx, startTime, intensity = 1) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   const filter = ctx.createBiquadFilter();
+  const clickOsc = ctx.createOscillator();
+  const clickGain = ctx.createGain();
+  const clickFilter = ctx.createBiquadFilter();
+
   filter.type = 'lowpass';
-  filter.frequency.value = 3200;
-  osc.type = wave || 'triangle';
-  osc.frequency.setValueAtTime(freq, startTime);
+  filter.frequency.setValueAtTime(1850, startTime);
+  filter.Q.value = 0.7;
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(125, startTime);
+  osc.frequency.exponentialRampToValueAtTime(82, startTime + 0.045);
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0, startTime);
-  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.012);
-  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.linearRampToValueAtTime(0.026 * intensity, startTime + 0.002);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.055);
+
+  clickFilter.type = 'bandpass';
+  clickFilter.frequency.setValueAtTime(4300, startTime);
+  clickFilter.Q.value = 1.15;
+  clickOsc.type = 'square';
+  clickOsc.frequency.setValueAtTime(4100, startTime);
+  clickOsc.frequency.exponentialRampToValueAtTime(2350, startTime + 0.018);
+  clickOsc.connect(clickFilter);
+  clickFilter.connect(clickGain);
+  clickGain.connect(ctx.destination);
+  clickGain.gain.setValueAtTime(0.0001, startTime);
+  clickGain.gain.linearRampToValueAtTime(0.012 * intensity, startTime + 0.001);
+  clickGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.024);
+
   osc.start(startTime);
-  osc.stop(startTime + duration + 0.02);
+  osc.stop(startTime + 0.065);
+  clickOsc.start(startTime);
+  clickOsc.stop(startTime + 0.03);
 }
 
 function playSFX(type = 'click') {
@@ -750,16 +772,13 @@ function playSFX(type = 'click') {
   try {
     const now = ctx.currentTime;
     if (type === 'open') {
-      // Dos notas subiendo (Do5 -> Sol5): transmite "se abrió algo"
-      playSfxTone(ctx, 523.25, now, 0.16, 0.05, 'triangle');
-      playSfxTone(ctx, 783.99, now + 0.05, 0.18, 0.045, 'triangle');
+      playMechanicalKey(ctx, now, 0.92);
+      playMechanicalKey(ctx, now + 0.045, 0.72);
     } else if (type === 'close') {
-      // Las mismas notas al revés: transmite "se cerró"
-      playSfxTone(ctx, 783.99, now, 0.14, 0.045, 'triangle');
-      playSfxTone(ctx, 523.25, now + 0.05, 0.18, 0.05, 'triangle');
+      playMechanicalKey(ctx, now, 0.86);
+      playMechanicalKey(ctx, now + 0.032, 0.62);
     } else {
-      // Click neutro: un toque corto y suave, no un pitido
-      playSfxTone(ctx, 660, now, 0.08, 0.035, 'sine');
+      playMechanicalKey(ctx, now, 0.78);
     }
   } catch (e) {}
 }
@@ -1458,21 +1477,29 @@ let isDragging = false;
 let dragStartX, dragStartY, cardStartX, cardStartY;
 
 if (btnFocusMode) {
-  btnFocusMode.addEventListener('click', () => {
-    playSFX('open');
-    const isFocus = document.body.classList.toggle('focus-mode');
+  btnFocusMode.addEventListener('click', (event) => {
+    event.preventDefault();
+
+    try {
+      playSFX('open');
+    } catch (_) {}
+
+    const isFocus = !document.body.classList.contains('focus-mode');
+    document.body.classList.toggle('focus-mode', isFocus);
     btnFocusMode.classList.toggle('active', isFocus);
 
-    if (!isFocus) {
-      playerCard.style.position = '';
-      playerCard.style.left = '';
-      playerCard.style.top = '';
-      playerCard.style.transform = '';
-    } else {
+    if (!playerCard) return;
+
+    if (isFocus) {
       playerCard.style.position = 'fixed';
       playerCard.style.top = '50%';
       playerCard.style.left = '50%';
-      playerCard.style.transform = 'translate(-50%, -50%)';
+      playerCard.style.transform = 'translate3d(-50%, -50%, 0)';
+    } else {
+      playerCard.style.removeProperty('position');
+      playerCard.style.removeProperty('left');
+      playerCard.style.removeProperty('top');
+      playerCard.style.removeProperty('transform');
     }
   });
 }
@@ -1943,11 +1970,25 @@ if (btnSavePlaylist) {
   });
 }
 
-if (btnMainMenu) btnMainMenu.addEventListener('click', () => { playSFX('open'); resetSettingsSlide(); modalSettings.classList.add('active'); });
+if (btnMainMenu) btnMainMenu.addEventListener('click', () => {
+  playSFX('open');
+  resetSettingsSlide();
+  if (modalSettings) {
+    modalSettings.style.display = 'flex';
+    modalSettings.classList.add('active');
+    modalSettings.setAttribute('aria-hidden', 'false');
+  }
+});
 if (btnCloseSettings) btnCloseSettings.addEventListener('click', () => { playSFX('close'); closeModalSettings(); });
 
 function closeModalSettings() {
-  if (modalSettings) modalSettings.classList.remove('active');
+  if (modalSettings) {
+    modalSettings.classList.remove('active');
+    modalSettings.style.display = 'none';
+    modalSettings.setAttribute('aria-hidden', 'true');
+  }
+  const secondaryButton = document.getElementById('btn-mobile-secondary-menu');
+  if (secondaryButton) secondaryButton.setAttribute('aria-expanded', 'false');
   resetSettingsSlide();
   // La barra inferior de celular se quedaba marcando "Ajustes" aunque ya hubieras cerrado el panel
   const mobileTabBarEl = document.getElementById('mobile-tab-bar');
@@ -2265,8 +2306,10 @@ if (inputGraphicsLevel) {
 }
 
 if (toggleSFX) {
+  toggleSFX.checked = sfxEnabled;
   toggleSFX.addEventListener('change', (e) => {
     sfxEnabled = e.target.checked;
+    localStorage.setItem('glasstrack_sfx_enabled', String(sfxEnabled));
   });
 }
 
@@ -4036,19 +4079,144 @@ const toggleMobileLayout = document.getElementById('toggle-mobile-layout');
 const mobileNowplayingBar = document.getElementById('mobile-nowplaying-bar');
 const mobileTabBar = document.getElementById('mobile-tab-bar');
 
+let mobileLayoutRafId = 0;
+
+function scheduleMobileLayoutFrame(callback) {
+  if (mobileLayoutRafId) return;
+  mobileLayoutRafId = window.requestAnimationFrame(() => {
+    mobileLayoutRafId = 0;
+    callback();
+  });
+}
+
+function cancelMobileLayoutFrame() {
+  if (!mobileLayoutRafId) return;
+  window.cancelAnimationFrame(mobileLayoutRafId);
+  mobileLayoutRafId = 0;
+}
+
+function restoreDesktopPointerEvents() {
+  const restoreTargets = [
+    document.body,
+    document.documentElement,
+    document.getElementById('app-layout'),
+    document.getElementById('control-notification-bar'),
+    document.querySelector('.top-global-bar'),
+    document.querySelector('.top-left-global-bar'),
+    document.getElementById('player-card')
+  ];
+
+  restoreTargets.forEach(el => {
+    if (!el) return;
+    el.style.pointerEvents = 'auto';
+  });
+
+  const hiddenMobileOverlays = [
+    document.getElementById('mobile-quick-menu'),
+    document.getElementById('top-experiences-menu')
+  ];
+
+  hiddenMobileOverlays.forEach(el => {
+    if (!el) return;
+    el.style.pointerEvents = 'none';
+  });
+}
+
 function applyMobileLayoutState(enabled) {
-  document.body.classList.toggle('mobile-layout', enabled);
-  if (!enabled) document.body.classList.remove('mobile-player-expanded');
+  const body = document.body;
+  const root = document.documentElement;
+  const wasMobile = body.classList.contains('mobile-layout') ||
+    body.classList.contains('mobile-mode') ||
+    body.classList.contains('mobile-layout-active') ||
+    body.classList.contains('mobile-mode-active');
+
+  if (enabled) {
+    if (!wasMobile) {
+      const currentScroll = window.scrollY || root.scrollTop || 0;
+      body.dataset.mobileScrollY = String(currentScroll);
+    }
+
+    body.classList.add(
+      'mobile-layout',
+      'mobile-mode',
+      'mobile-layout-active',
+      'mobile-mode-active'
+    );
+    root.classList.add('mobile-layout-enabled');
+
+    const currentScroll = Number(body.dataset.mobileScrollY || 0);
+
+    scheduleMobileLayoutFrame(() => {
+      body.style.top = `-${Math.max(0, currentScroll)}px`;
+      body.style.pointerEvents = 'auto';
+    });
+    return;
+  }
+
+  const previousScroll = Number(body.dataset.mobileScrollY || 0);
+
+  // Al salir, cancelar cualquier frame pendiente del estado anterior.
+  // Así nunca se ejecuta después del cleanup un callback que vuelva a escribir
+  // estilos móviles sobre la interfaz de escritorio.
+  cancelMobileLayoutFrame();
+
+  body.classList.remove(
+    'mobile-layout',
+    'mobile-mode',
+    'mobile-layout-active',
+    'mobile-mode-active',
+    'mobile-player-expanded',
+    'mobile-modal-lock',
+    'mobile-ui-hidden',
+    'mobile-player-layer-open'
+  );
+
+  root.classList.remove('mobile-layout-enabled');
+  body.style.removeProperty('top');
+  body.style.removeProperty('pointer-events');
+  root.style.removeProperty('pointer-events');
+
+  const player = document.getElementById('player-card');
+  if (player) player.classList.remove('mobile-expanded');
+
+  const topMenu = document.getElementById('top-experiences-menu');
+  const secondaryButton = document.getElementById('btn-mobile-secondary-menu');
+  const quickMenu = document.getElementById('mobile-quick-menu');
+  const mobileBar = document.getElementById('mobile-nowplaying-bar');
+  const mobileTabBar = document.getElementById('mobile-tab-bar');
+
+  if (topMenu) {
+    topMenu.classList.add('hidden');
+    topMenu.style.pointerEvents = 'none';
+    topMenu.setAttribute('aria-hidden', 'true');
+  }
+  if (secondaryButton) secondaryButton.setAttribute('aria-expanded', 'false');
+  if (quickMenu) {
+    quickMenu.classList.remove('active');
+    quickMenu.style.pointerEvents = 'none';
+    quickMenu.setAttribute('aria-hidden', 'true');
+  }
+  if (mobileBar) mobileBar.removeAttribute('aria-hidden');
+  if (mobileTabBar) mobileTabBar.removeAttribute('aria-hidden');
+
+  restoreDesktopPointerEvents();
+
+  /* Un solo reajuste del layout después de retirar las clases móviles. */
+  scheduleMobileLayoutFrame(() => {
+    window.scrollTo(0, Math.max(0, previousScroll));
+  });
 }
 
 if (toggleMobileLayout) {
   const savedMobileLayout = localStorage.getItem('mobileLayoutEnabled') === 'true';
   toggleMobileLayout.checked = savedMobileLayout;
   applyMobileLayoutState(savedMobileLayout);
-  toggleMobileLayout.addEventListener('change', (e) => {
+
+  toggleMobileLayout.addEventListener('change', event => {
+    const enabled = !!event.target.checked;
     playSFX('click');
-    localStorage.setItem('mobileLayoutEnabled', e.target.checked ? 'true' : 'false');
-    applyMobileLayoutState(e.target.checked);
+    localStorage.setItem('mobileLayoutEnabled', enabled ? 'true' : 'false');
+    applyMobileLayoutState(enabled);
   });
 }
 
@@ -4073,6 +4241,21 @@ if (mobileNowplayingBar) {
 }
 const mobileNpPlayBtn = document.getElementById('mobile-np-play');
 if (mobileNpPlayBtn) mobileNpPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); if (playBtn) playBtn.click(); });
+
+const mobileSecondaryMenu = document.getElementById('btn-mobile-secondary-menu');
+if (mobileSecondaryMenu) {
+  mobileSecondaryMenu.addEventListener('click', () => {
+    playSFX('open');
+    const settingsOpen = modalSettings && modalSettings.classList.contains('active');
+    if (settingsOpen) {
+      closeModalSettings();
+      mobileSecondaryMenu.setAttribute('aria-expanded', 'false');
+    } else if (btnMainMenu) {
+      btnMainMenu.click();
+      mobileSecondaryMenu.setAttribute('aria-expanded', 'true');
+    }
+  });
+}
 
 if (mobileTabBar) {
   mobileTabBar.querySelectorAll('.mobile-tab-btn').forEach(btn => {
@@ -11209,4 +11392,693 @@ if (typeof document !== 'undefined') {
   randomTip();
   startIntroAudio();
   startCounter();
+})();
+
+
+/* =========================================================
+   GLASSTRACK PRO — MOBILE UI V3 / STATE SYNC
+   ========================================================= */
+(() => {
+  'use strict';
+
+  const player = document.getElementById('player-card');
+  const nowPlaying = document.getElementById('mobile-nowplaying-bar');
+  const bottomNav = document.getElementById('mobile-tab-bar');
+  const closePlayer = document.getElementById('btn-close-mobile-player');
+
+  if (!player) return;
+
+  const syncExpandedMobilePlayer = () => {
+    const expanded = document.body.classList.contains('mobile-player-expanded') &&
+      player.classList.contains('mobile-expanded');
+
+    if (expanded) {
+      document.documentElement.classList.add('mobile-player-layer-open');
+      if (nowPlaying) nowPlaying.setAttribute('aria-hidden', 'true');
+      if (bottomNav) bottomNav.setAttribute('aria-hidden', 'true');
+    } else {
+      document.documentElement.classList.remove('mobile-player-layer-open');
+      if (nowPlaying) nowPlaying.removeAttribute('aria-hidden');
+      if (bottomNav) bottomNav.removeAttribute('aria-hidden');
+    }
+  };
+
+  const expandPlayer = () => {
+    if (!document.body.classList.contains('mobile-layout')) return;
+    player.classList.add('mobile-expanded');
+    document.body.classList.add('mobile-player-expanded');
+    syncExpandedMobilePlayer();
+  };
+
+  const collapsePlayer = () => {
+    player.classList.remove('mobile-expanded');
+    document.body.classList.remove('mobile-player-expanded');
+    syncExpandedMobilePlayer();
+  };
+
+  if (nowPlaying) {
+    nowPlaying.addEventListener('click', event => {
+      if (event.target.closest('#mobile-np-play')) return;
+      expandPlayer();
+    });
+  }
+
+  if (closePlayer) {
+    closePlayer.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      playSFX('close');
+      collapsePlayer();
+    }, true);
+  }
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && document.body.classList.contains('mobile-player-expanded')) {
+      event.preventDefault();
+      collapsePlayer();
+    }
+  });
+
+  const observer = new MutationObserver(syncExpandedMobilePlayer);
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+
+  syncExpandedMobilePlayer();
+})();
+
+
+/* =========================================================
+   GLASSTRACK PRO — MOBILE UI V4 / INTEGRACIÓN REAL
+   Todo el comportamiento añadido aquí se ejecuta solo cuando
+   body.mobile-layout/mobile-mode está activo.
+   ========================================================= */
+(() => {
+  'use strict';
+
+  const isMobileMode = () =>
+    document.body.classList.contains('mobile-layout') ||
+    document.body.classList.contains('mobile-mode');
+
+  const fileInputEl = document.getElementById('file-input');
+  const addMusicBtn = document.getElementById('btn-mobile-add-music');
+  const quickMenu = document.getElementById('mobile-quick-menu');
+  const quickTrigger = document.getElementById('btn-mobile-secondary-menu');
+  const player = document.getElementById('player-card');
+  const nowPlaying = document.getElementById('mobile-nowplaying-bar');
+
+  /* (+) reutiliza exactamente el selector de archivos existente. */
+  if (addMusicBtn && fileInputEl) {
+    addMusicBtn.addEventListener('click', event => {
+      if (!isMobileMode()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try { if (typeof playSFX === 'function') playSFX('click'); } catch (_) {}
+      fileInputEl.click();
+    });
+  }
+
+  /* Menú de tres puntos: opciones rápidas, sin Mini Player ni Enfoque duplicado. */
+  if (quickTrigger && quickMenu) {
+    quickTrigger.addEventListener('click', event => {
+      if (!isMobileMode()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      quickMenu.classList.toggle('active');
+      quickTrigger.setAttribute('aria-expanded', String(quickMenu.classList.contains('active')));
+      const experiences = document.getElementById('top-experiences-menu');
+      if (experiences) experiences.classList.add('hidden');
+      try { if (typeof playSFX === 'function') playSFX('click'); } catch (_) {}
+    }, true);
+
+    quickMenu.addEventListener('click', event => {
+      const button = event.target.closest('[data-mobile-quick]');
+      if (!button || !isMobileMode()) return;
+      event.preventDefault();
+      event.stopPropagation();
+
+      const action = button.dataset.mobileQuick;
+      quickMenu.classList.remove('active');
+      quickTrigger.setAttribute('aria-expanded', 'false');
+
+      const target = {
+        eq: document.getElementById('btn-eq-toggle'),
+        lyrics: document.getElementById('btn-lyrics-toggle'),
+        vm: document.getElementById('btn-vm-toggle'),
+        cinema: document.getElementById('btn-cinema-mode'),
+        shuffle: document.getElementById('shuffle'),
+        loop: document.getElementById('loop')
+      }[action];
+
+      if (target) target.click();
+    });
+  }
+
+  document.addEventListener('click', event => {
+    if (!quickMenu || !quickMenu.classList.contains('active')) return;
+    if (quickMenu.contains(event.target) || event.target === quickTrigger || quickTrigger?.contains(event.target)) return;
+    quickMenu.classList.remove('active');
+    quickTrigger?.setAttribute('aria-expanded', 'false');
+  }, true);
+
+  /* Accesos inferiores del reproductor expandido. */
+  const mobilePlayerEq = document.getElementById('mobile-player-eq');
+  const mobilePlayerLyrics = document.getElementById('mobile-player-lyrics');
+  const mobilePlayerVm = document.getElementById('mobile-player-vm');
+
+  const clickExisting = id => {
+    const target = document.getElementById(id);
+    if (target) target.click();
+  };
+
+  mobilePlayerEq?.addEventListener('click', () => {
+    if (!isMobileMode()) return;
+    clickExisting('btn-eq-toggle');
+  });
+
+  mobilePlayerLyrics?.addEventListener('click', () => {
+    if (!isMobileMode()) return;
+    clickExisting('btn-lyrics-toggle');
+  });
+
+  mobilePlayerVm?.addEventListener('click', () => {
+    if (!isMobileMode()) return;
+    clickExisting('btn-vm-toggle');
+  });
+
+  /* ---------------------------------------------------------
+     OCULTAR / RESTAURAR UI EN MODO CINE Y ENFOQUE
+     --------------------------------------------------------- */
+  const cinema = document.getElementById('cinema-mode');
+  const focusButton = document.getElementById('btn-focus-mode');
+
+  const syncVisualHide = () => {
+    const body = document.body;
+    if (!isMobileMode()) {
+      // No escribir la clase si ya está limpia. Esto evita generar una cadena
+      // innecesaria de MutationObserver -> syncVisualHide -> MutationObserver.
+      if (body.classList.contains('mobile-ui-hidden')) {
+        body.classList.remove('mobile-ui-hidden');
+      }
+      return;
+    }
+    const hiddenByFocus = body.classList.contains('focus-mode');
+    const hiddenByCinema = !!cinema?.classList.contains('active');
+    const shouldHide = hiddenByFocus || hiddenByCinema;
+    const isHidden = body.classList.contains('mobile-ui-hidden');
+
+    // Solo mutar cuando el estado realmente cambió.
+    if (shouldHide !== isHidden) {
+      body.classList.toggle('mobile-ui-hidden', shouldHide);
+    }
+  };
+
+  focusButton?.addEventListener('click', () => {
+    window.setTimeout(syncVisualHide, 0);
+  }, true);
+
+  document.getElementById('btn-close-cinema')?.addEventListener('click', () => {
+    window.setTimeout(syncVisualHide, 0);
+  }, true);
+
+  const visualObserver = new MutationObserver(syncVisualHide);
+  visualObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  if (cinema) visualObserver.observe(cinema, { attributes: true, attributeFilter: ['class'] });
+
+  document.addEventListener('click', event => {
+    if (!isMobileMode() || !document.body.classList.contains('mobile-ui-hidden')) return;
+    const clickedControl = event.target.closest('button, input, select, textarea, a, .cinema-controls, .lyrics-panel, .mobile-player-actions');
+    if (!clickedControl) {
+      document.body.classList.remove('mobile-ui-hidden');
+    }
+  }, true);
+
+  /* ---------------------------------------------------------
+     5 BANDAS EQ MÓVILES — conectadas a los filtros EXISTENTES.
+     60->64Hz, 230->250Hz, 910->1kHz, 4k->4kHz, 14k->16kHz.
+     --------------------------------------------------------- */
+  const mobileEqMap = [
+    ['mobile-eq-230', 3],
+    ['mobile-eq-910', 5],
+    ['mobile-eq-60', 1],
+    ['mobile-eq-4k', 7],
+    ['mobile-eq-14k', 9]
+  ];
+
+  const getDesktopEqSliders = () =>
+    Array.from(document.querySelectorAll('.eq-band-range'));
+
+  const updateMobileEqOutput = (id, value) => {
+    const output = document.getElementById(id + '-value');
+    if (output) output.textContent = `${Number(value).toFixed(1).replace('.0','')} dB`;
+  };
+
+  const syncMobileEqFromDesktop = () => {
+    const desktop = getDesktopEqSliders();
+    mobileEqMap.forEach(([id, index]) => {
+      const input = document.getElementById(id);
+      const source = desktop[index];
+      if (input && source) {
+        input.value = source.value;
+        updateMobileEqOutput(id, source.value);
+      }
+    });
+  };
+
+  mobileEqMap.forEach(([id, desktopIndex]) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener('input', () => {
+      if (!isMobileMode()) return;
+      const value = Number(input.value);
+      const desktop = getDesktopEqSliders();
+      const source = desktop[desktopIndex];
+      initAudioContext();
+      if (source) source.value = String(value);
+      if (typeof eqFilters !== 'undefined' && eqFilters[desktopIndex]) {
+        eqFilters[desktopIndex].gain.value = value;
+      }
+      updateMobileEqOutput(id, value);
+      document.querySelectorAll('.mobile-eq-preset').forEach(btn => btn.classList.toggle('active', btn.dataset.mobileEqPreset === 'custom'));
+      saveAudioSettings();
+    });
+  });
+
+  document.querySelectorAll('.eq-band-range').forEach(slider => {
+    slider.addEventListener('input', () => {
+      if (isMobileMode()) syncMobileEqFromDesktop();
+    }, { passive: true });
+  });
+
+  syncMobileEqFromDesktop();
+
+  /* Presets móviles: actualizan los filtros globales reales. */
+  const mobileEqPresets = {
+    normal:   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    classic:  [0, -1, -1, 1, 1.5, 1, 0, -0.5, -1, -1],
+    dance:    [5, 6, 3.5, 2, 0, 1, 2.5, 3.5, 4.5, 5]
+  };
+
+  document.querySelectorAll('.mobile-eq-preset').forEach(button => {
+    button.addEventListener('click', () => {
+      if (!isMobileMode()) return;
+      const preset = button.dataset.mobileEqPreset;
+      document.querySelectorAll('.mobile-eq-preset').forEach(btn => btn.classList.toggle('active', btn === button));
+      if (preset === 'custom') return;
+
+      initAudioContext();
+      const values = mobileEqPresets[preset];
+      if (!values) return;
+      const desktop = getDesktopEqSliders();
+      desktop.forEach((slider, index) => {
+        const value = values[index] ?? 0;
+        slider.value = String(value);
+        if (typeof eqFilters !== 'undefined' && eqFilters[index]) eqFilters[index].gain.value = value;
+      });
+      syncMobileEqFromDesktop();
+      saveAudioSettings();
+    });
+  });
+
+  /* ---------------------------------------------------------
+     BALANCE L/R — un solo estado compartido.
+     --------------------------------------------------------- */
+  const mobileBalance = document.getElementById('mobile-eq-balance');
+  const mobileBalanceValue = document.getElementById('mobile-eq-balance-value');
+  const desktopBalance = document.getElementById('input-audio-balance');
+  let balanceSyncing = false;
+
+  const setSharedBalance = value => {
+    if (balanceSyncing) return;
+    const safe = Math.max(-1, Math.min(1, Number(value) || 0));
+    balanceSyncing = true;
+    if (desktopBalance) desktopBalance.value = String(safe);
+    if (mobileBalance) mobileBalance.value = String(safe);
+    if (mobileBalanceValue) mobileBalanceValue.textContent = safe === 0 ? '0' : safe.toFixed(2);
+
+    initAudioContext();
+    try {
+      if (typeof pannerNode !== 'undefined' && pannerNode) {
+        if (pannerNode.context && pannerNode.context.state === 'suspended') pannerNode.context.resume().catch(() => {});
+        pannerNode.pan.setValueAtTime(safe, pannerNode.context.currentTime);
+      }
+    } catch (_) {}
+
+    saveAudioSettings();
+    balanceSyncing = false;
+  };
+
+  desktopBalance?.addEventListener('input', () => {
+    const value = Number(desktopBalance.value) || 0;
+    if (mobileBalanceValue) mobileBalanceValue.textContent = value === 0 ? '0' : value.toFixed(2);
+    if (mobileBalance && !balanceSyncing) mobileBalance.value = String(value);
+    try {
+      initAudioContext();
+      if (typeof pannerNode !== 'undefined' && pannerNode && (!toggle8dAudio || !toggle8dAudio.checked)) {
+        pannerNode.pan.setValueAtTime(value, pannerNode.context.currentTime);
+      }
+    } catch (_) {}
+  });
+
+  mobileBalance?.addEventListener('input', () => setSharedBalance(mobileBalance.value));
+  syncMobileEqFromDesktop();
+  if (desktopBalance) setSharedBalance(desktopBalance.value);
+
+  /* ---------------------------------------------------------
+     REVERB MÓVIL — añade un send/return ligero sin crear otra
+     fuente de MediaElement. Solo se conecta al pipeline cuando
+     el usuario selecciona una opción.
+     --------------------------------------------------------- */
+  let mobileReverbConvolver = null;
+  let mobileReverbGain = null;
+  let mobileReverbCurrent = 'none';
+
+  const createImpulseResponse = (context, seconds, decay) => {
+    const length = Math.max(1, Math.floor(context.sampleRate * seconds));
+    const impulse = context.createBuffer(2, length, context.sampleRate);
+    for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+      const data = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        const t = i / length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, decay);
+      }
+    }
+    return impulse;
+  };
+
+  const ensureMobileReverb = () => {
+    initAudioContext();
+    if (!mobileReverbConvolver && typeof audioCtx !== 'undefined' && audioCtx && typeof limiterNode !== 'undefined' && limiterNode) {
+      mobileReverbConvolver = audioCtx.createConvolver();
+      mobileReverbGain = audioCtx.createGain();
+      mobileReverbGain.gain.value = 0;
+      mobileReverbConvolver.buffer = createImpulseResponse(audioCtx, 2.1, 2.8);
+      limiterNode.connect(mobileReverbConvolver);
+      mobileReverbConvolver.connect(mobileReverbGain);
+      mobileReverbGain.connect(stereoBypassGain);
+    }
+    return !!mobileReverbConvolver;
+  };
+
+  const applyMobileReverb = value => {
+    if (!isMobileMode()) return;
+    mobileReverbCurrent = value;
+    if (value === 'none') {
+      if (mobileReverbGain) mobileReverbGain.gain.value = 0;
+      saveAudioSettings();
+      return;
+    }
+
+    if (!ensureMobileReverb()) return;
+    const settings = {
+      small: { gain: 0.12, seconds: 0.75, decay: 3.9 },
+      room: { gain: 0.18, seconds: 1.25, decay: 3.0 },
+      hall: { gain: 0.24, seconds: 1.9, decay: 2.2 }
+    }[value] || { gain: 0, seconds: 1, decay: 3 };
+
+    mobileReverbConvolver.buffer = createImpulseResponse(audioCtx, settings.seconds, settings.decay);
+    mobileReverbGain.gain.setValueAtTime(settings.gain, audioCtx.currentTime);
+    saveAudioSettings();
+  };
+
+  document.getElementById('mobile-eq-reverb')?.addEventListener('change', event => {
+    applyMobileReverb(event.target.value);
+  });
+
+  /* ---------------------------------------------------------
+     CIERRE LIMPIO DE AJUSTES EN MÓVIL
+     --------------------------------------------------------- */
+  const mobileSettingsButton = document.querySelector('#mobile-tab-bar [data-tab="ajustes"]');
+  const settingsClose = document.getElementById('btn-close-settings');
+  const modalSettingsEl = document.getElementById('modal-settings');
+
+  const forceCloseSettings = () => {
+    if (!modalSettingsEl) return;
+    modalSettingsEl.classList.remove('active');
+    modalSettingsEl.style.display = 'none';
+    modalSettingsEl.setAttribute('aria-hidden', 'true');
+  };
+
+  settingsClose?.addEventListener('click', forceCloseSettings, true);
+
+  modalSettingsEl?.addEventListener('click', event => {
+    if (event.target === modalSettingsEl) forceCloseSettings();
+  }, true);
+
+  mobileSettingsButton?.addEventListener('click', () => {
+    window.setTimeout(() => {
+      if (modalSettingsEl) {
+        modalSettingsEl.style.display = 'flex';
+        modalSettingsEl.classList.add('active');
+      }
+    }, 0);
+  }, true);
+
+  /* ---------------------------------------------------------
+     EXPANSIÓN DEL REPRODUCTOR: toque en la barra compacta.
+     --------------------------------------------------------- */
+  if (nowPlaying && player) {
+    nowPlaying.addEventListener('click', event => {
+      if (!isMobileMode()) return;
+      if (event.target.closest('#mobile-np-play')) return;
+      player.classList.add('mobile-expanded');
+      document.body.classList.add('mobile-player-expanded');
+    }, true);
+  }
+
+  /* La inicialización ya se realiza una sola vez junto al listener principal.
+     No volver a ejecutar applyMobileLayoutState aquí: duplicarlo provoca dos
+     ciclos de mutación/layout al cargar la interfaz. */
+})();
+
+
+/* =========================================================
+   GLASSTRACK PRO V5 — FIXES PC SIN TOCAR LA UI MÓVIL
+   ========================================================= */
+(() => {
+  'use strict';
+
+  const pcTrigger = document.getElementById('btn-pc-secondary-menu');
+  const experiencesMenu = document.getElementById('top-experiences-menu');
+  const focusButton = document.getElementById('btn-focus-mode');
+  const desktopPlayer = document.getElementById('player-card');
+  const desktopVehicle = document.getElementById('vehicle-mode');
+  const desktopCinema = document.getElementById('cinema-mode');
+  const desktopSettings = document.getElementById('modal-settings');
+
+  const isMobileUI = () =>
+    document.body.classList.contains('mobile-layout') ||
+    document.body.classList.contains('mobile-mode');
+
+  /* ---------------------------------------------------------
+     1. PC — NUEVO BOTÓN DE OPCIONES SECUNDARIAS
+     Usa el mismo menú que antes pertenecía a Modo Vista.
+     En móvil esta lógica no interviene.
+     --------------------------------------------------------- */
+  const positionDesktopExperiencesMenu = () => {
+    if (isMobileUI() || !pcTrigger || !experiencesMenu || experiencesMenu.classList.contains('hidden')) return;
+
+    const rect = pcTrigger.getBoundingClientRect();
+    const width = Math.min(340, Math.max(280, experiencesMenu.offsetWidth || 320));
+    const height = experiencesMenu.offsetHeight || 210;
+    const gap = 8;
+    const padding = 10;
+
+    let left = rect.right - width;
+    let top = rect.bottom + gap;
+
+    left = Math.min(
+      Math.max(left, padding),
+      Math.max(padding, window.innerWidth - width - padding)
+    );
+
+    if (top + height > window.innerHeight - padding) {
+      top = rect.top - height - gap;
+    }
+
+    top = Math.min(
+      Math.max(top, padding),
+      Math.max(padding, window.innerHeight - height - padding)
+    );
+
+    experiencesMenu.style.left = `${left}px`;
+    experiencesMenu.style.top = `${top}px`;
+  };
+
+  const closeDesktopExperiencesMenu = () => {
+    if (!experiencesMenu) return;
+    experiencesMenu.classList.add('hidden');
+    pcTrigger?.setAttribute('aria-expanded', 'false');
+  };
+
+  const openDesktopExperiencesMenu = event => {
+    if (isMobileUI() || !pcTrigger || !experiencesMenu) return;
+    event?.preventDefault();
+    event?.stopPropagation();
+    experiencesMenu.classList.remove('hidden');
+    pcTrigger.setAttribute('aria-expanded', 'true');
+    positionDesktopExperiencesMenu();
+  };
+
+  pcTrigger?.addEventListener('click', event => {
+    if (isMobileUI()) return;
+    try { if (typeof playSFX === 'function') playSFX('click'); } catch (_) {}
+    if (experiencesMenu?.classList.contains('hidden')) {
+      openDesktopExperiencesMenu(event);
+    } else {
+      closeDesktopExperiencesMenu();
+    }
+  });
+
+  window.addEventListener('resize', positionDesktopExperiencesMenu, { passive: true });
+  window.addEventListener('scroll', positionDesktopExperiencesMenu, { passive: true });
+
+  /* ---------------------------------------------------------
+     2. PC — MODO ENFOQUE
+     El botón utiliza una única implementación global para evitar
+     listeners duplicados y estados de foco contradictorios.
+     --------------------------------------------------------- */
+  /* Evita que el arrastre del foco de escritorio se quede vivo después de
+     perder el foco de la ventana. */
+  window.addEventListener('blur', () => {
+    if (!isMobileUI()) window.__glasstrackFocusDragging = false;
+  });
+
+  /* ---------------------------------------------------------
+     3. MODOS DE PANTALLA PC — CIERRE CONSISTENTE
+     --------------------------------------------------------- */
+  const closeVehicleSafe = () => {
+    if (!desktopVehicle) return;
+    desktopVehicle.classList.remove('active');
+    desktopVehicle.setAttribute('aria-hidden', 'true');
+  };
+
+  const closeCinemaSafe = () => {
+    if (!desktopCinema) return;
+    desktopCinema.classList.remove('active');
+    desktopCinema.classList.remove('karaoke-layout');
+    desktopCinema.setAttribute('aria-hidden', 'true');
+  };
+
+  document.addEventListener('keydown', event => {
+    if (isMobileUI() || event.key !== 'Escape') return;
+
+    const vehicleActive = desktopVehicle?.classList.contains('active');
+    const cinemaActive = desktopCinema?.classList.contains('active');
+    const settingsActive = desktopSettings?.classList.contains('active');
+    const menuActive = experiencesMenu && !experiencesMenu.classList.contains('hidden');
+
+    if (vehicleActive) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeVehicleSafe();
+      try { if (typeof playSFX === 'function') playSFX('close'); } catch (_) {}
+      return;
+    }
+
+    if (cinemaActive) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeCinemaSafe();
+      try { if (typeof playSFX === 'function') playSFX('close'); } catch (_) {}
+      return;
+    }
+
+    if (settingsActive) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (typeof closeModalSettings === 'function') closeModalSettings();
+      return;
+    }
+
+    if (menuActive) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeDesktopExperiencesMenu();
+      return;
+    }
+  }, true);
+
+  /* Cerrar un modo de pantalla si el usuario vuelve a abrir el mismo modo.
+     No modifica el comportamiento móvil. */
+  document.getElementById('btn-vehicle-mode')?.addEventListener('click', () => {
+    if (isMobileUI()) return;
+    if (desktopVehicle) {
+      desktopVehicle.setAttribute('aria-hidden', 'false');
+    }
+  }, true);
+
+  document.getElementById('btn-cinema-mode')?.addEventListener('click', () => {
+    if (isMobileUI()) return;
+    if (desktopCinema) {
+      desktopCinema.setAttribute('aria-hidden', 'false');
+    }
+  }, true);
+
+})();
+
+
+/* =========================================================
+   B8 CLEAN MOBILE LYRICS — control independiente
+   No intercepta #mobile-player-lyrics ni #btn-lyrics-toggle.
+   ========================================================= */
+(() => {
+  const toggle = document.getElementById('mobile-inline-lyrics-toggle');
+  const panel = document.getElementById('mobile-inline-lyrics');
+  if (!toggle || !panel) return;
+
+  const isMobileUi = () => document.body.classList.contains('mobile-layout') || document.body.classList.contains('mobile-mode');
+
+  function syncMobileInlineLyrics() {
+    if (!isMobileUi() || !panel.classList.contains('is-visible')) return;
+    const source = document.getElementById('lyrics-body');
+    const active = source?.querySelector('.lyrics-line.active');
+    if (active) {
+      panel.innerHTML = active.outerHTML;
+      panel.setAttribute('aria-hidden', 'false');
+      return;
+    }
+    panel.textContent = 'Sin letra disponible.';
+  }
+
+  const sourceLyrics = document.getElementById('lyrics-body');
+  let lyricsSyncRaf = 0;
+  const queueLyricsSync = () => {
+    if (!isMobileUi() || !panel.classList.contains('is-visible')) return;
+    if (lyricsSyncRaf) return;
+    lyricsSyncRaf = window.requestAnimationFrame(() => {
+      lyricsSyncRaf = 0;
+      syncMobileInlineLyrics();
+    });
+  };
+
+  // El reproductor puede cambiar la línea activa después de timeupdate.
+  // Observamos esos cambios para que la letra pequeña siga automáticamente
+  // la canción, sin obligar al usuario a cerrar y volver a abrir el botón.
+  const lyricsObserver = sourceLyrics ? new MutationObserver(queueLyricsSync) : null;
+  lyricsObserver?.observe(sourceLyrics, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['class', 'data-active']
+  });
+
+  toggle.addEventListener('click', (event) => {
+    if (!isMobileUi()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const visible = panel.classList.toggle('is-visible');
+    toggle.setAttribute('aria-expanded', String(visible));
+    panel.setAttribute('aria-hidden', String(!visible));
+    if (visible) syncMobileInlineLyrics();
+  });
+
+  // Reutiliza el mismo reloj de audio de la aplicación; no crea intervalos nuevos.
+  const audioNodes = [document.getElementById('audio1'), document.getElementById('audio2')].filter(Boolean);
+  audioNodes.forEach(audio => {
+    audio.addEventListener('timeupdate', queueLyricsSync, { passive: true });
+  });
+
+  window.addEventListener('resize', queueLyricsSync, { passive: true });
 })();
