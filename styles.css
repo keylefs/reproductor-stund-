@@ -5135,3 +5135,2033 @@ html.glasstrack-intro-seen #glasstrack-splash {
   }
 }
 
+
+
+/* =========================================================
+   GLASSTRACK PRO — MOBILE UI V2 / LAYERS & SCROLL FIX
+   ========================================================= */
+
+/* Jerarquía global solicitada */
+.app-layout { position: relative; z-index: 1; }
+.library-panel,
+.player-card { z-index: 100; }
+#control-notification-bar,
+.top-left-global-bar,
+.top-global-bar { z-index: 500 !important; }
+.modal-overlay { z-index: 1500 !important; }
+.lyrics-panel { z-index: 2000 !important; }
+#modal-calibrate-lyrics,
+.lyrics-studio,
+#modal-studio-help { z-index: 3000 !important; }
+
+/* El ajuste general no deja una capa invisible después de cerrarse. */
+#modal-settings { z-index: 1500 !important; }
+#modal-settings:not(.active) { pointer-events: none !important; }
+
+/* Estado móvil: congelamos el documento y dejamos el scroll solo a paneles internos. */
+html.mobile-layout-enabled {
+  width: 100%;
+  height: 100%;
+  overflow: hidden !important;
+}
+
+body.mobile-layout {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden !important;
+  padding: 0 0 76px !important;
+  display: block;
+  overscroll-behavior: none;
+}
+
+/* Header móvil: Vista / Auto / Fullscreen / Tres puntos. */
+body.mobile-layout .top-left-global-bar {
+  display: none !important;
+}
+
+body.mobile-layout .top-global-bar {
+  position: fixed !important;
+  top: max(8px, env(safe-area-inset-top)) !important;
+  right: 8px !important;
+  left: auto !important;
+  z-index: 500 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: rgba(12,14,21,.52);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body.mobile-layout .top-global-bar > #btn-focus-mode,
+body.mobile-layout .top-global-bar > #btn-mini-player,
+body.mobile-layout .top-global-bar > #btn-concludor-mode {
+  display: none !important;
+}
+
+body.mobile-layout .top-global-bar > #btn-top-experiences,
+body.mobile-layout .top-global-bar > #btn-vehicle-mode,
+body.mobile-layout .top-global-bar > #btn-fullscreen,
+body.mobile-layout .top-global-bar > #btn-mobile-secondary-menu {
+  display: inline-flex !important;
+  min-width: 39px;
+  width: 39px;
+  height: 39px;
+  padding: 7px;
+  border-radius: 11px;
+  justify-content: center;
+  align-items: center;
+}
+
+body.mobile-layout .mobile-secondary-menu-btn {
+  display: inline-flex !important;
+}
+
+/* No se ofrece el Mini Player dentro de la interfaz móvil. */
+body.mobile-layout #btn-mini-player,
+body.mobile-layout #modes-menu-mini {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* El selector de música ocupa la pantalla y solo su lista puede desplazarse. */
+body.mobile-layout .app-layout {
+  width: 100%;
+  max-width: none;
+  height: calc(100dvh - 76px);
+  min-height: 0;
+  margin: 0 !important;
+  padding: 10px 10px 0;
+  overflow: hidden !important;
+  display: block;
+}
+
+body.mobile-layout .library-panel {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  overflow: hidden !important;
+  border-radius: 18px;
+  display: flex;
+}
+
+body.mobile-layout .library-content {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+body.mobile-layout #playlist {
+  min-height: 0;
+  overflow: visible;
+}
+
+/* Player expandido: el scroll sigue siendo interno y táctil. */
+body.mobile-layout .player-card.mobile-expanded {
+  z-index: 100 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Barra inferior móvil siempre por encima de la vista base. */
+body.mobile-layout .mobile-tab-bar {
+  z-index: 500 !important;
+}
+
+body.mobile-layout .mobile-nowplaying-bar {
+  z-index: 500 !important;
+}
+
+/* Ajustes Generales: pantalla completa en móvil, sin margen lateral. */
+@media (max-width: 768px) {
+  #modal-settings {
+    width: 100% !important;
+    right: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    align-items: stretch !important;
+    justify-content: flex-end !important;
+  }
+
+  #modal-settings .settings-window {
+    width: 100% !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  #modal-settings .settings-slider-wrapper {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #modal-settings .settings-panel {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 10px 24px;
+  }
+
+  /* Ventana de Calibrador: escala visual 0.78 manteniendo el contenido dentro del teléfono. */
+  #modal-calibrate-lyrics .calibrate-window {
+    width: min(124vw, 620px) !important;
+    max-width: none !important;
+    max-height: 116dvh !important;
+    transform: scale(.78) !important;
+    transform-origin: center center !important;
+    overflow: hidden !important;
+  }
+
+  #modal-calibrate-lyrics.active .calibrate-window {
+    transform: scale(.78) !important;
+  }
+
+  #modal-calibrate-lyrics .calibrate-body {
+    min-width: 0 !important;
+    max-height: calc(116dvh - 80px);
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modo Estudio: adaptación por flexbox para evitar 80vw/100% rígidos. */
+  .lyrics-studio {
+    z-index: 3000 !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .lyrics-studio .studio-header {
+    min-height: 52px;
+    padding: 8px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .lyrics-studio .studio-header h3 {
+    font-size: .82rem;
+  }
+
+  .lyrics-studio .studio-tabs {
+    width: 100%;
+    order: 3;
+    overflow-x: auto;
+    display: flex;
+    gap: 5px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .lyrics-studio .studio-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lyrics-studio .studio-body {
+    flex-direction: column;
+    width: 100%;
+    height: calc(100dvh - 88px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .lyrics-studio .studio-preview {
+    width: 100% !important;
+    height: auto;
+    min-height: 0;
+    max-height: 230px;
+    flex: 0 0 auto;
+    padding: 9px;
+    border-right: 0;
+    border-bottom: 1px solid var(--card-border);
+    overflow-y: auto;
+    display: flex;
+  }
+
+  .lyrics-studio .studio-preview-cover {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+  }
+
+  .lyrics-studio .studio-preview-title {
+    font-size: .86rem;
+  }
+
+  .lyrics-studio .studio-preview-artist {
+    font-size: .68rem;
+    margin-bottom: 5px;
+  }
+
+  .lyrics-studio .studio-preview-line {
+    min-height: 25px;
+    margin: 5px 0;
+    font-size: .8rem;
+  }
+
+  .lyrics-studio .studio-controls {
+    gap: 10px;
+    margin: 5px 0;
+  }
+
+  .lyrics-studio .studio-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 9px;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lyrics-studio .studio-panel > * {
+    max-width: 100%;
+  }
+
+  /* Letras activas se mantienen en una ventana interna independiente. */
+  body.mobile-layout .lyrics-panel.active {
+    position: fixed;
+    inset: auto 0 0 0 !important;
+    width: 100% !important;
+    height: 88dvh !important;
+    z-index: 2000 !important;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .lyrics-panel .lyrics-body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 38%;
+    padding-bottom: 38%;
+  }
+
+  /* Modo Cine: fondo + letras + controles principales. */
+  body.mobile-layout .cinema-mode.active {
+    z-index: 1500 !important;
+  }
+
+  body.mobile-layout .cinema-content {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    padding: 0;
+    display: block;
+  }
+
+  body.mobile-layout .cinema-cover-col {
+    display: none !important;
+  }
+
+  body.mobile-layout .cinema-lyrics-col {
+    position: absolute;
+    inset: 68px 10px 116px 10px;
+    width: auto;
+    height: auto;
+    padding: 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0,0,0,.22) 8%,
+      #000 22%,
+      #000 68%,
+      rgba(0,0,0,.22) 86%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0,0,0,.22) 8%,
+      #000 22%,
+      #000 68%,
+      rgba(0,0,0,.22) 86%,
+      transparent 100%
+    );
+  }
+
+  body.mobile-layout .cinema-lyrics-body {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 52% 8px 64% !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  body.mobile-layout .cinema-lyrics-body::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.mobile-layout .cinema-lyrics-body .lyrics-line {
+    margin: 18px 0;
+    font-size: calc(1.35rem * var(--lyrics-scale, 1));
+    line-height: 1.22;
+  }
+
+  body.mobile-layout .cinema-controls {
+    position: absolute;
+    left: 50%;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    z-index: 3;
+    transform: translate3d(-50%, 0, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: min(240px, calc(100vw - 32px));
+    padding: 8px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 16px;
+    background: rgba(7,9,14,.52);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  body.mobile-layout .cinema-controls .cinema-eq {
+    display: none !important;
+  }
+
+  body.mobile-layout .cinema-close {
+    top: max(12px, env(safe-area-inset-top));
+    left: 12px;
+    z-index: 5;
+  }
+}
+
+@media (max-width: 420px) {
+  body.mobile-layout .top-global-bar {
+    right: 5px !important;
+    gap: 3px;
+    padding: 4px;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-top-experiences,
+  body.mobile-layout .top-global-bar > #btn-vehicle-mode,
+  body.mobile-layout .top-global-bar > #btn-fullscreen,
+  body.mobile-layout .top-global-bar > #btn-mobile-secondary-menu {
+    min-width: 35px;
+    width: 35px;
+    height: 35px;
+    padding: 6px;
+  }
+}
+
+
+/* =========================================================
+   GLASSTRACK PRO — MOBILE UI V3
+   Correcciones de capas, reproductor expandido y modos.
+   ========================================================= */
+
+/* El reproductor expandido debe quedar por encima del header móvil. */
+body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1200 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom)) !important;
+  animation: mobilePlayerExpandV3 .24s ease-out both !important;
+}
+
+@keyframes mobilePlayerExpandV3 {
+  from {
+    opacity: .72;
+    transform: translate3d(0, 8px, 0) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* Al expandir, desaparecen los controles externos para que la X no quede tapada. */
+body.mobile-layout.mobile-player-expanded .top-global-bar,
+body.mobile-layout.mobile-player-expanded .mobile-nowplaying-bar,
+body.mobile-layout.mobile-player-expanded .mobile-tab-bar {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* X del reproductor expandido */
+body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded #btn-close-mobile-player {
+  position: absolute !important;
+  top: max(10px, env(safe-area-inset-top)) !important;
+  right: 10px !important;
+  z-index: 1210 !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  background: rgba(8, 10, 16, .76) !important;
+  border: 1px solid rgba(255,255,255,.13) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  color: #fff !important;
+  pointer-events: auto !important;
+}
+
+/* No dejar que la cabecera interna invada el área de la X. */
+body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .top-bar {
+  padding-right: 52px !important;
+}
+
+/* El botón Vista usa un icono de ojo, no tres puntos. */
+body.mobile-layout #btn-top-experiences {
+  order: 1;
+}
+
+/* La ventana Modos y Experiencias nunca debe sobresalir de una vista activa. */
+body.mobile-layout .top-experiences-menu {
+  z-index: 550 !important;
+}
+
+/* Modo Auto / Vehículo: overlay superior al header y X siempre accesible. */
+body.mobile-layout .vehicle-mode.active {
+  z-index: 1600 !important;
+}
+
+body.mobile-layout .vehicle-mode.active .vehicle-exit {
+  position: fixed !important;
+  top: max(12px, env(safe-area-inset-top)) !important;
+  right: 12px !important;
+  z-index: 1601 !important;
+  width: 42px !important;
+  height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  background: rgba(10,12,18,.80) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  pointer-events: auto !important;
+}
+
+/* Modo Cine también tapa la barra superior, manteniendo solo su propio cierre. */
+body.mobile-layout .cinema-mode.active {
+  z-index: 1700 !important;
+}
+
+body.mobile-layout .cinema-mode.active .cinema-close {
+  z-index: 1701 !important;
+  pointer-events: auto !important;
+}
+
+/* Letras: ventana por encima del reproductor y con scroll interno. */
+body.mobile-layout .lyrics-panel.active {
+  z-index: 2000 !important;
+}
+
+/* EQ y Voz/Música: paneles compactos que flotan dentro de la pantalla móvil. */
+@media (max-width: 768px) {
+  body.mobile-layout .eq-panel:not(.hidden),
+  body.mobile-layout #vm-panel:not(.hidden) {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translate3d(-50%, -50%, 0) !important;
+    width: min(92vw, 360px) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: min(72dvh, 560px) !important;
+    overflow-y: auto !important;
+    z-index: 1500 !important;
+    border-radius: 18px !important;
+    padding: 14px !important;
+    background: rgba(12,14,21,.94) !important;
+    box-shadow: 0 24px 80px rgba(0,0,0,.48) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+
+  body.mobile-layout .eq-panel:not(.hidden) {
+    max-height: min(70dvh, 520px) !important;
+  }
+
+  body.mobile-layout #vm-panel:not(.hidden) {
+    max-height: min(60dvh, 430px) !important;
+  }
+
+  /* Cuando un panel está activo, el reproductor puede permanecer visible detrás. */
+  body.mobile-layout .eq-panel .eq-sliders {
+    max-height: 120px;
+  }
+
+  /* Selector de música: barra de desplazamiento fina y limpia. */
+  body.mobile-layout .library-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.20) transparent;
+  }
+
+  body.mobile-layout .library-content::-webkit-scrollbar,
+  body.mobile-layout .lyrics-body::-webkit-scrollbar,
+  body.mobile-layout .cinema-lyrics-body::-webkit-scrollbar,
+  body.mobile-layout .studio-panel::-webkit-scrollbar,
+  body.mobile-layout .studio-preview::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  body.mobile-layout .library-content::-webkit-scrollbar-track,
+  body.mobile-layout .lyrics-body::-webkit-scrollbar-track,
+  body.mobile-layout .cinema-lyrics-body::-webkit-scrollbar-track,
+  body.mobile-layout .studio-panel::-webkit-scrollbar-track,
+  body.mobile-layout .studio-preview::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  body.mobile-layout .library-content::-webkit-scrollbar-thumb,
+  body.mobile-layout .lyrics-body::-webkit-scrollbar-thumb,
+  body.mobile-layout .cinema-lyrics-body::-webkit-scrollbar-thumb,
+  body.mobile-layout .studio-panel::-webkit-scrollbar-thumb,
+  body.mobile-layout .studio-preview::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.18);
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.05);
+  }
+
+  /* Evita barras fantasma del documento. */
+  html.mobile-layout-enabled::-webkit-scrollbar,
+  body.mobile-layout::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  /* El selector ocupa el área superior de la barra inferior. */
+  body.mobile-layout .app-layout {
+    height: calc(100dvh - 76px) !important;
+    padding: 8px 8px 0 !important;
+  }
+
+  /* Barra reproduciendo ahora ligeramente más cómoda. */
+  body.mobile-layout .mobile-nowplaying-bar {
+    left: 8px;
+    right: 8px;
+    bottom: 68px;
+    min-height: 58px;
+    padding: 8px 10px;
+  }
+
+  /* Barra inferior limpia y fija cuando no hay reproductor expandido. */
+  body.mobile-layout:not(.mobile-player-expanded) .mobile-tab-bar {
+    display: flex !important;
+    z-index: 500 !important;
+  }
+
+  /* Evitar que el header se mezcle con un modo de pantalla completa. */
+  body.mobile-layout .top-global-bar {
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  }
+
+  /* Ajustes Generales por encima del reproductor, con cierre limpio. */
+  body.mobile-layout #modal-settings.active {
+    z-index: 1500 !important;
+    pointer-events: auto !important;
+  }
+
+  body.mobile-layout #modal-settings:not(.active) {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
+/* En pantallas muy pequeñas, el header no tapa la carátula ni el título. */
+@media (max-width: 420px) {
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  body.mobile-layout .top-global-bar {
+    right: 4px !important;
+    top: max(5px, env(safe-area-inset-top)) !important;
+  }
+}
+
+
+/* =========================================================
+   GLASSTRACK PRO — MOBILE UI V4
+   Aislamiento estricto: solo body.mobile-layout/mobile-mode.
+   ========================================================= */
+
+.mobile-quick-menu,
+.mobile-eq-controls,
+.mobile-player-actions,
+.mobile-add-music-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  html.mobile-layout-enabled,
+  body.mobile-layout,
+  body.mobile-mode {
+    overflow: hidden !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    overscroll-behavior: none !important;
+  }
+
+  body.mobile-layout,
+  body.mobile-mode {
+    padding: 0 !important;
+    min-height: 100dvh !important;
+    display: block !important;
+  }
+
+  body.mobile-layout .app-layout,
+  body.mobile-mode .app-layout {
+    position: fixed !important;
+    inset: 0 0 0 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 68px 8px 84px !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    z-index: 1 !important;
+  }
+
+  /* HEADER DEFINITIVO */
+  body.mobile-layout .top-left-global-bar,
+  body.mobile-mode .top-left-global-bar {
+    display: none !important;
+  }
+
+  body.mobile-layout .top-global-bar,
+  body.mobile-mode .top-global-bar {
+    position: fixed !important;
+    top: max(6px, env(safe-area-inset-top)) !important;
+    right: 7px !important;
+    left: auto !important;
+    z-index: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 4px !important;
+    max-width: calc(100vw - 14px) !important;
+    border-radius: 14px !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-focus-mode,
+  body.mobile-mode .top-global-bar > #btn-focus-mode,
+  body.mobile-layout .top-global-bar > #btn-mini-player,
+  body.mobile-mode .top-global-bar > #btn-mini-player,
+  body.mobile-layout .top-global-bar > #btn-concludor-mode,
+  body.mobile-mode .top-global-bar > #btn-concludor-mode {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-top-experiences,
+  body.mobile-mode .top-global-bar > #btn-top-experiences {
+    order: 1 !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-vehicle-mode,
+  body.mobile-mode .top-global-bar > #btn-vehicle-mode {
+    order: 2 !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-mobile-add-music,
+  body.mobile-mode .top-global-bar > #btn-mobile-add-music {
+    order: 3 !important;
+    display: inline-flex !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-fullscreen,
+  body.mobile-mode .top-global-bar > #btn-fullscreen {
+    order: 4 !important;
+    display: inline-flex !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-mobile-secondary-menu,
+  body.mobile-mode .top-global-bar > #btn-mobile-secondary-menu {
+    order: 5 !important;
+    display: inline-flex !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-top-experiences,
+  body.mobile-layout .top-global-bar > #btn-vehicle-mode,
+  body.mobile-layout .top-global-bar > #btn-mobile-add-music,
+  body.mobile-layout .top-global-bar > #btn-fullscreen,
+  body.mobile-layout .top-global-bar > #btn-mobile-secondary-menu,
+  body.mobile-mode .top-global-bar > #btn-top-experiences,
+  body.mobile-mode .top-global-bar > #btn-vehicle-mode,
+  body.mobile-mode .top-global-bar > #btn-mobile-add-music,
+  body.mobile-mode .top-global-bar > #btn-fullscreen,
+  body.mobile-mode .top-global-bar > #btn-mobile-secondary-menu {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    padding: 7px !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  /* Vista = ojo, no tres puntos. */
+  body.mobile-layout #btn-top-experiences svg,
+  body.mobile-mode #btn-top-experiences svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  /* Mini Player desaparece completamente de la experiencia móvil. */
+  body.mobile-layout #btn-mini-player,
+  body.mobile-mode #btn-mini-player,
+  body.mobile-layout #modes-menu-mini,
+  body.mobile-mode #modes-menu-mini {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Menú Vista: contenido dentro del viewport. */
+  body.mobile-layout #top-experiences-menu,
+  body.mobile-mode #top-experiences-menu {
+    position: fixed !important;
+    z-index: 550 !important;
+    width: min(340px, calc(100vw - 20px)) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Tres puntos = opciones rápidas, no Ajustes duplicados. */
+  body.mobile-layout .mobile-quick-menu,
+  body.mobile-mode .mobile-quick-menu {
+    position: fixed !important;
+    top: max(53px, calc(env(safe-area-inset-top) + 53px)) !important;
+    right: 8px !important;
+    z-index: 560 !important;
+    width: min(235px, calc(100vw - 16px)) !important;
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 16px;
+    background: rgba(10,12,18,.92);
+    box-shadow: 0 18px 55px rgba(0,0,0,.46);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  body.mobile-layout .mobile-quick-menu.active,
+  body.mobile-mode .mobile-quick-menu.active {
+    display: grid !important;
+  }
+
+  .mobile-quick-item {
+    min-height: 38px;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 10px;
+    background: rgba(255,255,255,.04);
+    color: #fff;
+    cursor: pointer;
+    font-size: .64rem;
+  }
+
+  .mobile-quick-item:active {
+    transform: scale(.98);
+  }
+
+  body.mobile-layout .modes-menu .menu-opt-btn,
+  body.mobile-mode .modes-menu .menu-opt-btn {
+    min-height: 40px;
+  }
+
+  /* No duplicación de Enfoque dentro de la navegación visual móvil. */
+  body.mobile-layout #modes-menu-focus,
+  body.mobile-mode #modes-menu-focus {
+    display: none !important;
+  }
+
+  /* LAYOUT DE BIBLIOTECA */
+  body.mobile-layout .library-panel,
+  body.mobile-mode .library-panel {
+    position: relative !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    border-radius: 16px !important;
+    z-index: 100 !important;
+  }
+
+  body.mobile-layout .library-header,
+  body.mobile-mode .library-header {
+    flex: 0 0 auto !important;
+  }
+
+  body.mobile-layout .library-content,
+  body.mobile-mode .library-content {
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: 120px !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(255,255,255,.22) transparent !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  body.mobile-layout #playlist,
+  body.mobile-mode #playlist {
+    padding-bottom: 120px !important;
+  }
+
+  body.mobile-layout .hidden-songs-banner,
+  body.mobile-mode .hidden-songs-banner {
+    margin-bottom: 24px !important;
+  }
+
+  /* reproductor compacto inferior */
+  body.mobile-layout .mobile-nowplaying-bar,
+  body.mobile-mode .mobile-nowplaying-bar {
+    display: flex !important;
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 68px !important;
+    z-index: 400 !important;
+    min-height: 58px !important;
+  }
+
+  /* TAB BAR */
+  body.mobile-layout .mobile-tab-bar,
+  body.mobile-mode .mobile-tab-bar {
+    display: flex !important;
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 500 !important;
+  }
+
+  /* reproductor expandido: encima de header, now playing y navegación */
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1200 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    padding: max(52px, calc(env(safe-area-inset-top) + 42px)) 14px max(92px, calc(env(safe-area-inset-bottom) + 84px)) !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .top-global-bar,
+  body.mobile-mode.mobile-player-expanded .top-global-bar,
+  body.mobile-layout.mobile-player-expanded .mobile-nowplaying-bar,
+  body.mobile-mode.mobile-player-expanded .mobile-nowplaying-bar,
+  body.mobile-layout.mobile-player-expanded .mobile-tab-bar,
+  body.mobile-mode.mobile-player-expanded .mobile-tab-bar {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .top-bar,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .top-bar {
+    position: absolute !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    left: 10px !important;
+    right: 10px !important;
+    z-index: 4 !important;
+    justify-content: flex-end !important;
+    padding-right: 50px !important;
+    margin: 0 !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded #btn-eq-toggle,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded #btn-eq-toggle,
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded #btn-lyrics-toggle,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded #btn-lyrics-toggle,
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded #btn-vm-toggle,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded #btn-vm-toggle {
+    display: none !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded #btn-close-mobile-player,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded #btn-close-mobile-player {
+    display: flex !important;
+    position: absolute !important;
+    top: max(10px, env(safe-area-inset-top)) !important;
+    right: 10px !important;
+    z-index: 20 !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+    background: rgba(6,8,13,.76) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    color: #fff !important;
+  }
+
+  /* arte y controles táctiles ampliados */
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .cover-container,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .cover-container {
+    width: min(64vw, 270px) !important;
+    height: min(64vw, 270px) !important;
+    flex: 0 0 auto !important;
+    margin: 4px auto 18px !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .player-visualizer,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .player-visualizer {
+    height: 40px !important;
+    margin-bottom: 12px !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .song-info,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .song-info {
+    flex: 0 0 auto !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .controls,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .controls {
+    gap: 14px !important;
+    margin: 16px 0 !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .controls .icon-btn,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .controls .icon-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    border-radius: 14px !important;
+    background: rgba(255,255,255,.055) !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .btn-play,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .btn-play {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .volume-container,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .volume-container {
+    flex: 0 0 auto !important;
+    margin-top: 6px !important;
+    gap: 9px !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded #volume,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded #volume {
+    height: 28px !important;
+    accent-color: var(--primary-color) !important;
+  }
+
+  /* Barra inferior física EQ / Letras / Voz-Música */
+  body.mobile-layout .mobile-player-actions,
+  body.mobile-mode .mobile-player-actions {
+    display: none;
+  }
+
+  body.mobile-layout.mobile-player-expanded .mobile-player-actions,
+  body.mobile-mode.mobile-player-expanded .mobile-player-actions {
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    z-index: 1215 !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1.6fr 1fr !important;
+    gap: 8px !important;
+    padding: 7px !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    border-radius: 17px !important;
+    background: rgba(8,10,16,.78) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+  }
+
+  .mobile-player-action {
+    min-height: 48px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    background: rgba(255,255,255,.045);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+  }
+
+  .mobile-player-action-pill {
+    font-size: .74rem;
+    font-weight: 700;
+  }
+
+  .mobile-player-action:active {
+    transform: scale(.98);
+  }
+
+  /* EQ Bottom Sheet: solo móvil, 50-60% de la pantalla */
+  body.mobile-layout .eq-panel:not(.hidden),
+  body.mobile-mode .eq-panel:not(.hidden) {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 56dvh !important;
+    max-height: 62dvh !important;
+    min-height: 310px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 1500 !important;
+    border-radius: 22px 22px 0 0 !important;
+    padding: 12px 14px max(18px, env(safe-area-inset-bottom)) !important;
+    background: rgba(10,12,18,.96) !important;
+    box-shadow: 0 -22px 70px rgba(0,0,0,.46) !important;
+    backdrop-filter: blur(17px) !important;
+    -webkit-backdrop-filter: blur(17px) !important;
+  }
+
+  body.mobile-layout #vm-panel:not(.hidden),
+  body.mobile-mode #vm-panel:not(.hidden) {
+    height: 46dvh !important;
+    max-height: 52dvh !important;
+    min-height: 260px !important;
+  }
+
+  body.mobile-layout .mobile-eq-controls,
+  body.mobile-mode .mobile-eq-controls {
+    display: block !important;
+  }
+
+  body.mobile-layout .eq-presets,
+  body.mobile-mode .eq-presets {
+    display: none !important;
+  }
+
+  body.mobile-layout .eq-sliders,
+  body.mobile-mode .eq-sliders,
+  body.mobile-layout .eq-extra-toggles,
+  body.mobile-mode .eq-extra-toggles {
+    display: none !important;
+  }
+
+  .mobile-eq-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 2px 0 12px;
+  }
+
+  .mobile-eq-preset {
+    min-height: 32px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 999px;
+    background: rgba(255,255,255,.045);
+    color: rgba(255,255,255,.72);
+    font-size: .58rem;
+    cursor: pointer;
+  }
+
+  .mobile-eq-preset.active {
+    color: #fff;
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.18);
+  }
+
+  .mobile-eq-slider-grid {
+    height: 176px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    align-items: end;
+    margin-top: 3px;
+  }
+
+  .mobile-eq-band {
+    min-width: 0;
+    height: 100%;
+    display: grid;
+    grid-template-rows: 22px 1fr 18px;
+    justify-items: center;
+    gap: 5px;
+    color: rgba(255,255,255,.54);
+    font-size: .55rem;
+  }
+
+  .mobile-eq-band input[type="range"] {
+    width: 135px;
+    max-width: 135px;
+    height: 22px;
+    margin: 0;
+    accent-color: var(--primary-color);
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
+
+  .mobile-eq-band output {
+    color: #fff;
+    font-size: .56rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mobile-eq-bottom-grid {
+    display: grid;
+    grid-template-columns: .9fr 1.1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .mobile-eq-select,
+  .mobile-eq-balance {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: rgba(255,255,255,.58);
+    font-size: .60rem;
+  }
+
+  .mobile-eq-select select {
+    height: 36px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 10px;
+    background: rgba(255,255,255,.045);
+    color: #fff;
+    padding: 0 9px;
+  }
+
+  .mobile-eq-balance span {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .mobile-eq-balance output {
+    color: #fff;
+  }
+
+  .mobile-eq-balance input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary-color);
+  }
+
+  /* Scrollbars internos, nunca el documento */
+  body.mobile-layout .library-content::-webkit-scrollbar,
+  body.mobile-mode .library-content::-webkit-scrollbar,
+  body.mobile-layout .lyrics-body::-webkit-scrollbar,
+  body.mobile-mode .lyrics-body::-webkit-scrollbar,
+  body.mobile-layout .top-experiences-menu::-webkit-scrollbar,
+  body.mobile-mode .top-experiences-menu::-webkit-scrollbar,
+  body.mobile-layout .eq-panel::-webkit-scrollbar,
+  body.mobile-mode .eq-panel::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  body.mobile-layout .library-content::-webkit-scrollbar-track,
+  body.mobile-mode .library-content::-webkit-scrollbar-track,
+  body.mobile-layout .lyrics-body::-webkit-scrollbar-track,
+  body.mobile-mode .lyrics-body::-webkit-scrollbar-track,
+  body.mobile-layout .top-experiences-menu::-webkit-scrollbar-track,
+  body.mobile-mode .top-experiences-menu::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  body.mobile-layout .library-content::-webkit-scrollbar-thumb,
+  body.mobile-mode .library-content::-webkit-scrollbar-thumb,
+  body.mobile-layout .lyrics-body::-webkit-scrollbar-thumb,
+  body.mobile-mode .lyrics-body::-webkit-scrollbar-thumb,
+  body.mobile-layout .top-experiences-menu::-webkit-scrollbar-thumb,
+  body.mobile-mode .top-experiences-menu::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.18);
+    border-radius: 999px;
+  }
+
+  /* Z-index móvil definitivo */
+  body.mobile-layout .player-card,
+  body.mobile-mode .player-card { z-index: 100; }
+  body.mobile-layout .top-global-bar,
+  body.mobile-mode .top-global-bar { z-index: 500 !important; }
+  body.mobile-layout #modal-settings,
+  body.mobile-mode #modal-settings { z-index: 1000 !important; }
+  body.mobile-layout .eq-panel:not(.hidden),
+  body.mobile-mode .eq-panel:not(.hidden),
+  body.mobile-layout #vm-panel:not(.hidden),
+  body.mobile-mode #vm-panel:not(.hidden) { z-index: 1500 !important; }
+  body.mobile-layout .lyrics-panel.active,
+  body.mobile-mode .lyrics-panel.active { z-index: 2000 !important; }
+  body.mobile-layout #modal-calibrate-lyrics,
+  body.mobile-mode #modal-calibrate-lyrics,
+  body.mobile-layout .lyrics-studio,
+  body.mobile-mode .lyrics-studio,
+  body.mobile-layout #modal-studio-help,
+  body.mobile-mode #modal-studio-help { z-index: 3000 !important; }
+
+  /* Ajustes Generales: 100% real */
+  body.mobile-layout #modal-settings,
+  body.mobile-mode #modal-settings {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    padding: 0 !important;
+    z-index: 1000 !important;
+    justify-content: flex-end !important;
+    align-items: stretch !important;
+  }
+
+  body.mobile-layout #modal-settings .settings-window,
+  body.mobile-mode #modal-settings .settings-window {
+    width: 100% !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  body.mobile-layout #modal-settings:not(.active),
+  body.mobile-mode #modal-settings:not(.active) {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Letras internas con scroll */
+  body.mobile-layout .lyrics-panel.active,
+  body.mobile-mode .lyrics-panel.active {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .lyrics-panel.active .lyrics-body,
+  body.mobile-mode .lyrics-panel.active .lyrics-body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 34vh !important;
+  }
+
+  /* Calibrador / Estudio encajan dentro del viewport */
+  body.mobile-layout #modal-calibrate-lyrics .calibrate-window,
+  body.mobile-mode #modal-calibrate-lyrics .calibrate-window {
+    width: min(96vw, 420px) !important;
+    max-width: 96vw !important;
+    max-height: 88dvh !important;
+    transform: scale(.78) !important;
+    transform-origin: center center !important;
+    margin: 0 !important;
+  }
+
+  body.mobile-layout .lyrics-studio,
+  body.mobile-mode .lyrics-studio {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .lyrics-studio .studio-body,
+  body.mobile-mode .lyrics-studio .studio-body {
+    min-height: 0 !important;
+    height: calc(100dvh - 70px) !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .lyrics-studio .studio-preview,
+  body.mobile-mode .lyrics-studio .studio-preview {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-height: 220px !important;
+    flex: 0 0 auto !important;
+    overflow-y: auto !important;
+  }
+
+  body.mobile-layout .lyrics-studio .studio-panel,
+  body.mobile-mode .lyrics-studio .studio-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Modo Cine: una sola capa visual; UI secundaria oculta. */
+  body.mobile-layout .cinema-mode.active,
+  body.mobile-mode .cinema-mode.active {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    z-index: 1700 !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .cinema-content,
+  body.mobile-mode .cinema-content {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 58px 12px 112px !important;
+    display: block !important;
+    max-width: none !important;
+  }
+
+  body.mobile-layout .cinema-cover-col,
+  body.mobile-mode .cinema-cover-col {
+    display: none !important;
+  }
+
+  body.mobile-layout .cinema-lyrics-col,
+  body.mobile-mode .cinema-lyrics-col {
+    position: absolute !important;
+    inset: 58px 10px 110px 10px !important;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.15) 8%, #000 20%, #000 67%, rgba(0,0,0,.15) 88%, transparent 100%) !important;
+    mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.15) 8%, #000 20%, #000 67%, rgba(0,0,0,.15) 88%, transparent 100%) !important;
+  }
+
+  body.mobile-layout .cinema-lyrics-body,
+  body.mobile-mode .cinema-lyrics-body {
+    height: 100% !important;
+    overflow-y: auto !important;
+    padding: 48% 10px 58% !important;
+    scrollbar-width: none !important;
+    text-align: center !important;
+  }
+
+  body.mobile-layout .cinema-lyrics-body .lyrics-line,
+  body.mobile-mode .cinema-lyrics-body .lyrics-line {
+    margin: 16px 0 !important;
+    font-size: calc(1.35rem * var(--lyrics-scale,1)) !important;
+    line-height: 1.22 !important;
+  }
+
+  body.mobile-layout .cinema-controls,
+  body.mobile-mode .cinema-controls {
+    position: absolute !important;
+    left: 50% !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    z-index: 4 !important;
+    transform: translate3d(-50%,0,0) !important;
+  }
+
+  /* Modo Enfoque/Cine: ocultar UI; un toque limpio la recupera. */
+  body.mobile-layout.mobile-ui-hidden .top-global-bar,
+  body.mobile-mode.mobile-ui-hidden .top-global-bar,
+  body.mobile-layout.mobile-ui-hidden .mobile-tab-bar,
+  body.mobile-mode.mobile-ui-hidden .mobile-tab-bar,
+  body.mobile-layout.mobile-ui-hidden .mobile-nowplaying-bar,
+  body.mobile-mode.mobile-ui-hidden .mobile-nowplaying-bar,
+  body.mobile-layout.mobile-ui-hidden .floating-upload-btn,
+  body.mobile-mode.mobile-ui-hidden .floating-upload-btn,
+  body.mobile-layout.mobile-ui-hidden .app-layout,
+  body.mobile-mode.mobile-ui-hidden .app-layout {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  body.mobile-layout.mobile-ui-hidden .cinema-mode.active,
+  body.mobile-mode.mobile-ui-hidden .cinema-mode.active {
+    display: block !important;
+  }
+
+  /* El modo enfoque oculta también el reproductor */
+  body.mobile-layout.mobile-ui-hidden.focus-mode .player-card,
+  body.mobile-mode.mobile-ui-hidden.focus-mode .player-card {
+    display: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+  body.mobile-layout .top-global-bar,
+  body.mobile-mode .top-global-bar {
+    right: 4px !important;
+    gap: 2px !important;
+  }
+
+  body.mobile-layout .top-global-bar > #btn-top-experiences,
+  body.mobile-layout .top-global-bar > #btn-vehicle-mode,
+  body.mobile-layout .top-global-bar > #btn-mobile-add-music,
+  body.mobile-layout .top-global-bar > #btn-fullscreen,
+  body.mobile-layout .top-global-bar > #btn-mobile-secondary-menu,
+  body.mobile-mode .top-global-bar > #btn-top-experiences,
+  body.mobile-mode .top-global-bar > #btn-vehicle-mode,
+  body.mobile-mode .top-global-bar > #btn-mobile-add-music,
+  body.mobile-mode .top-global-bar > #btn-fullscreen,
+  body.mobile-mode .top-global-bar > #btn-mobile-secondary-menu {
+    width: 35px !important;
+    min-width: 35px !important;
+    height: 35px !important;
+    padding: 6px !important;
+  }
+
+  body.mobile-layout.mobile-player-expanded .player-card.mobile-expanded .cover-container,
+  body.mobile-mode.mobile-player-expanded .player-card.mobile-expanded .cover-container {
+    width: min(70vw, 250px) !important;
+    height: min(70vw, 250px) !important;
+  }
+
+  .mobile-eq-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   GLASSTRACK PRO V5 — CORRECCIONES EXCLUSIVAS MODO PC
+   ========================================================= */
+@media (min-width: 769px) {
+  /* Modo Vista deja de ser un botón propio en PC. */
+  body:not(.mobile-layout) #btn-top-experiences {
+    display: none !important;
+  }
+
+  body:not(.mobile-layout) #btn-pc-secondary-menu {
+    display: inline-flex !important;
+  }
+
+  body:not(.mobile-layout) #top-experiences-menu {
+    z-index: 16000 !important;
+  }
+
+  body:not(.mobile-layout) .pc-secondary-menu-trigger {
+    position: relative;
+  }
+
+  /* Focus de escritorio no debe crear un stacking context accidental. */
+  body:not(.mobile-layout).focus-mode .player-card {
+    z-index: 99 !important;
+  }
+
+  /* Cuando un modo inmersivo está activo, sus cierres quedan por encima de todo. */
+  body:not(.mobile-layout) .vehicle-mode.active .vehicle-exit,
+  body:not(.mobile-layout) .cinema-mode.active .cinema-close {
+    z-index: 20000 !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* Nunca mostrar el botón de opciones PC dentro de la experiencia móvil. */
+@media (max-width: 768px) {
+  body.mobile-layout #btn-pc-secondary-menu,
+  body.mobile-mode #btn-pc-secondary-menu {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
+/* =========================================================
+   GLASSTRACK PRO V5 — EQ MÓVIL SIN DESBORDE
+   ========================================================= */
+@media (max-width: 768px) {
+  body.mobile-layout .eq-panel:not(.hidden),
+  body.mobile-mode .eq-panel:not(.hidden) {
+    box-sizing: border-box !important;
+    padding: 12px 14px max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  body.mobile-layout .mobile-eq-slider-grid,
+  body.mobile-mode .mobile-eq-slider-grid {
+    height: 194px !important;
+    min-height: 194px !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 5px !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .mobile-eq-band,
+  body.mobile-mode .mobile-eq-band {
+    min-width: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: grid !important;
+    grid-template-rows: 24px 1fr 18px !important;
+    justify-items: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .mobile-eq-band input[type="range"],
+  body.mobile-mode .mobile-eq-band input[type="range"] {
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+    writing-mode: vertical-lr !important;
+    direction: rtl !important;
+    width: 26px !important;
+    min-width: 26px !important;
+    max-width: 26px !important;
+    height: 140px !important;
+    min-height: 140px !important;
+    max-height: 140px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+
+  body.mobile-layout .mobile-eq-band output,
+  body.mobile-mode .mobile-eq-band output {
+    white-space: nowrap !important;
+    font-size: .54rem !important;
+  }
+
+  body.mobile-layout .mobile-eq-bottom-grid,
+  body.mobile-mode .mobile-eq-bottom-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+}
+
+/* =========================================================
+   GLASSTRACK PRO V6 — AISLAMIENTO DE BOTONES MÓVILES/PC
+   ========================================================= */
+@media (min-width: 769px) {
+  body:not(.mobile-layout):not(.mobile-mode) #btn-mobile-secondary-menu,
+  body:not(.mobile-layout):not(.mobile-mode) #mobile-quick-menu,
+  body:not(.mobile-layout):not(.mobile-mode) #btn-mobile-add-music {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  body:not(.mobile-layout):not(.mobile-mode) #btn-pc-secondary-menu {
+    display: inline-flex !important;
+    pointer-events: auto !important;
+  }
+
+  body:not(.mobile-layout):not(.mobile-mode) #btn-top-experiences {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body.mobile-layout #btn-pc-secondary-menu,
+  body.mobile-mode #btn-pc-secondary-menu {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  body:not(.mobile-layout):not(.mobile-mode) #btn-mobile-secondary-menu {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
+/* =========================================================
+   GLASSTRACK PRO — MOBILE STABILITY PATCH
+   Desactivación limpia del modo móvil + EQ centrado.
+   Solo aplica al Modo Interfaz Celular.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  /* Al salir del modo móvil, ningún contenedor debe conservar una capa de interacción bloqueada. */
+  body:not(.mobile-layout):not(.mobile-mode):not(.mobile-layout-active):not(.mobile-mode-active),
+  body:not(.mobile-layout):not(.mobile-mode):not(.mobile-layout-active):not(.mobile-mode-active) .app-layout,
+  body:not(.mobile-layout):not(.mobile-mode):not(.mobile-layout-active):not(.mobile-mode-active) #control-notification-bar,
+  body:not(.mobile-layout):not(.mobile-mode):not(.mobile-layout-active):not(.mobile-mode-active) .top-global-bar,
+  body:not(.mobile-layout):not(.mobile-mode):not(.mobile-layout-active):not(.mobile-mode-active) .top-left-global-bar,
+  body:not(.mobile-layout):not(.mobile-mode):not(.mobile-layout-active):not(.mobile-mode-active) .player-card {
+    pointer-events: auto !important;
+  }
+
+  /* Ecualizador móvil: centrado absoluto respecto del viewport. */
+  body.mobile-layout .eq-panel:not(.hidden),
+  body.mobile-mode .eq-panel:not(.hidden),
+  body.mobile-layout-active .eq-panel:not(.hidden),
+  body.mobile-mode-active .eq-panel:not(.hidden) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 90vw !important;
+    max-width: 420px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: 82dvh !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    z-index: 1500 !important;
+  }
+
+  /* Voz/Música conserva el mismo centrado para que ambos paneles tengan un origen común. */
+  body.mobile-layout #vm-panel:not(.hidden),
+  body.mobile-mode #vm-panel:not(.hidden),
+  body.mobile-layout-active #vm-panel:not(.hidden),
+  body.mobile-mode-active #vm-panel:not(.hidden) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 90vw !important;
+    max-width: 420px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: 72dvh !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    z-index: 1500 !important;
+  }
+
+  /* Evita que el contenido interno fuerce el panel fuera del ancho disponible. */
+  body.mobile-layout .eq-panel:not(.hidden) > *,
+  body.mobile-mode .eq-panel:not(.hidden) > *,
+  body.mobile-layout-active .eq-panel:not(.hidden) > *,
+  body.mobile-mode-active .eq-panel:not(.hidden) > * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+
+
+/* =========================================================
+   GLASSTRACK PRO — B8 CLEAN MOBILE ADDITIONS
+   IMPORTANTE: no modifica el layout PC ni los controles de la carátula.
+   ========================================================= */
+
+.nav-btn-hidden-files {
+  white-space: nowrap;
+  min-width: auto;
+}
+
+.mobile-inline-lyrics-wrap {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* El acceso pequeño a la letra vive dentro del reproductor móvil,
+     debajo de la zona de volumen/acciones; nunca dentro de la biblioteca. */
+  body.mobile-layout .mobile-inline-lyrics-wrap,
+  body.mobile-mode .mobile-inline-lyrics-wrap {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 8px;
+    gap: 6px;
+  }
+
+  body.mobile-layout .mobile-inline-lyrics-toggle,
+  body.mobile-mode .mobile-inline-lyrics-toggle {
+    min-height: 34px;
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 10px;
+    background: rgba(255,255,255,.055);
+    color: #fff;
+    font-size: .72rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body.mobile-layout .mobile-inline-lyrics,
+  body.mobile-mode .mobile-inline-lyrics {
+    display: none;
+    width: 100%;
+    min-height: 38px;
+    max-height: 64px;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+    background: rgba(5,7,12,.55);
+    color: #fff;
+    text-align: center;
+    font-size: .82rem;
+    line-height: 1.25;
+  }
+
+  body.mobile-layout .mobile-inline-lyrics.is-visible,
+  body.mobile-mode .mobile-inline-lyrics.is-visible {
+    display: block !important;
+  }
+
+  body.mobile-layout .mobile-inline-lyrics .lyrics-line,
+  body.mobile-mode .mobile-inline-lyrics .lyrics-line {
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  /* Modo Cine móvil: barra superior compacta. La X y los controles
+     permanecen dentro del viewport y no dependen del ancho intermedio. */
+  body.mobile-layout .cinema-mode.active,
+  body.mobile-mode .cinema-mode.active {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    z-index: 10000 !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .cinema-content,
+  body.mobile-mode .cinema-content {
+    height: 100dvh !important;
+    min-height: 0 !important;
+  }
+
+  body.mobile-layout .cinema-cover-col,
+  body.mobile-mode .cinema-cover-col {
+    display: flex !important;
+    position: fixed !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    left: 10px !important;
+    right: 58px !important;
+    width: auto !important;
+    height: 58px !important;
+    z-index: 10003 !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  body.mobile-layout .cinema-cover-art,
+  body.mobile-mode .cinema-cover-art {
+    display: block !important;
+    flex: 0 0 52px !important;
+    width: 52px !important;
+    height: 52px !important;
+    object-fit: cover !important;
+    border-radius: 9px !important;
+  }
+
+  body.mobile-layout .cinema-track-info,
+  body.mobile-mode .cinema-track-info {
+    display: none !important;
+  }
+
+  body.mobile-layout .cinema-seekbar-wrapper,
+  body.mobile-mode .cinema-seekbar-wrapper {
+    display: none !important;
+  }
+
+  body.mobile-layout .cinema-controls,
+  body.mobile-mode .cinema-controls {
+    position: static !important;
+    margin-left: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transform: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 5px !important;
+    pointer-events: auto !important;
+  }
+
+  body.mobile-layout .cinema-controls .icon-btn,
+  body.mobile-layout .cinema-controls .btn-play,
+  body.mobile-mode .cinema-controls .icon-btn,
+  body.mobile-mode .cinema-controls .btn-play {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
+    padding: 0 !important;
+  }
+
+  body.mobile-layout .cinema-controls .cinema-eq,
+  body.mobile-mode .cinema-controls .cinema-eq {
+    display: none !important;
+  }
+
+  body.mobile-layout .cinema-close,
+  body.mobile-mode .cinema-close {
+    position: fixed !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    right: 10px !important;
+    left: auto !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    z-index: 10005 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
+  body.mobile-layout .cinema-lyrics-col,
+  body.mobile-mode .cinema-lyrics-col {
+    position: absolute !important;
+    inset: 78px 8px max(18px, env(safe-area-inset-bottom) + 18px) 8px !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  body.mobile-layout .cinema-lyrics-body,
+  body.mobile-mode .cinema-lyrics-body {
+    padding: 34% 8px 40% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+
+/* =========================================================
+   B8 CLEAN PATCH — LETRA MÓVIL EN VIVO + CABECERA CINE
+   ========================================================= */
+@media (max-width: 768px) {
+  /* En Cine móvil: carátula + título + artista + controles, todo en una sola fila. */
+  body.mobile-layout .cinema-cover-col,
+  body.mobile-mode .cinema-cover-col {
+    right: 54px !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+
+  body.mobile-layout .cinema-track-info,
+  body.mobile-mode .cinema-track-info {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    overflow: hidden !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 2px !important;
+  }
+
+  body.mobile-layout .cinema-track-info h4,
+  body.mobile-mode .cinema-track-info h4,
+  body.mobile-layout .cinema-track-info p,
+  body.mobile-mode .cinema-track-info p {
+    display: block !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body.mobile-layout .cinema-track-info h4,
+  body.mobile-mode .cinema-track-info h4 { font-size: .82rem !important; }
+  body.mobile-layout .cinema-track-info p,
+  body.mobile-mode .cinema-track-info p { font-size: .68rem !important; opacity: .72 !important; }
+}
+
+/* En PC el cierre del panel de Letras siempre queda por encima de Ajustes. */
+@media (min-width: 769px) {
+  body:not(.mobile-layout) .lyrics-panel.active {
+    z-index: 2200 !important;
+  }
+
+  body:not(.mobile-layout) .lyrics-panel .lyrics-header,
+  body:not(.mobile-layout) .lyrics-panel .lyrics-actions,
+  body:not(.mobile-layout) .lyrics-panel #btn-close-lyrics {
+    position: relative !important;
+    z-index: 2300 !important;
+  }
+
+  body:not(.mobile-layout) .lyrics-panel #btn-close-lyrics {
+    right: -6px !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* =========================================================
+   V17 FINAL — CIERRES SEPARADOS + SFX TECLADO MECÁNICO
+   ========================================================= */
+@media (max-width: 768px) {
+  /* El cierre de Modo Cine va al lado izquierdo.
+     El cierre de Letras permanece a la derecha para que nunca se solapen. */
+  body.mobile-layout .cinema-mode.active .cinema-close,
+  body.mobile-mode .cinema-mode.active .cinema-close {
+    top: max(8px, env(safe-area-inset-top)) !important;
+    left: 10px !important;
+    right: auto !important;
+    z-index: 10005 !important;
+  }
+}
